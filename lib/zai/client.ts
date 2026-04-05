@@ -14,7 +14,7 @@ import type {
 const API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
 
 /** 사용 모델 */
-const MODEL = 'glm-4.7';
+const MODEL = 'glm-5-turbo';
 
 export class ZaiClient {
   private readonly apiKey: string;

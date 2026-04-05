@@ -52,7 +52,7 @@ describe('ZaiClient', () => {
   });
 
   describe('completeChat', () => {
-    it('올바른 요청 본문을 전송해야 한다 (model=glm-4.7, stream=false)', async () => {
+    it('올바른 요청 본문을 전송해야 한다 (model=glm-5-turbo, stream=false)', async () => {
       mockFetchSuccess(dummyResponse);
 
       const client = new ZaiClient(TEST_API_KEY);
@@ -75,7 +75,7 @@ describe('ZaiClient', () => {
 
       // 요청 본문 검증
       const body = JSON.parse(options?.body as string);
-      expect(body.model).toBe('glm-4.7');
+      expect(body.model).toBe('glm-5-turbo');
       expect(body.stream).toBe(false);
       expect(body.messages).toEqual(messages);
       expect(body.tools).toBeUndefined();
@@ -120,7 +120,7 @@ describe('ZaiClient', () => {
       expect(body.tools).toEqual(tools);
       expect(body.tool_choice).toBe('auto');
       expect(body.stream).toBe(false);
-      expect(body.model).toBe('glm-4.7');
+      expect(body.model).toBe('glm-5-turbo');
     });
   });
 
