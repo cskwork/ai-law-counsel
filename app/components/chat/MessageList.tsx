@@ -3,9 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { ToolCallIndicator } from './ToolCallIndicator';
-import { LoadingDots } from '@/app/components/common/LoadingDots';
 
-// 채팅 이벤트 타입 (메시지, 도구 호출, 도구 결과)
 export interface ChatEvent {
   id: string;
   type: 'message' | 'tool_call' | 'tool_result';
@@ -21,7 +19,7 @@ interface MessageListProps {
   isStreaming: boolean;
 }
 
-// 채팅 메시지 목록 컴포넌트 (자동 스크롤 포함)
+// 메시지 목록 (자동 스크롤 + 스켈레톤 로더)
 export function MessageList({ events, isStreaming }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -30,8 +28,8 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
   }, [events, isStreaming]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6">
-      <div className="max-w-3xl mx-auto space-y-1">
+    <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6">
+      <div className="max-w-3xl mx-auto space-y-0.5">
         {events.map((event) => {
           if (event.type === 'message' && event.role && event.content) {
             return (
@@ -55,9 +53,12 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
           return null;
         })}
         {isStreaming && events[events.length - 1]?.type !== 'tool_call' && (
-          <div className="flex justify-start my-2">
-            <div className="bg-gray-100 rounded-2xl px-4 py-3">
-              <LoadingDots />
+          <div className="flex justify-start my-1.5 animate-fade-up">
+            <div className="rounded-2xl bg-white px-5 py-4 shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100">
+              <div className="flex flex-col gap-2">
+                <div className="h-3 w-48 rounded-md animate-shimmer" />
+                <div className="h-3 w-32 rounded-md animate-shimmer [animation-delay:0.1s]" />
+              </div>
             </div>
           </div>
         )}
