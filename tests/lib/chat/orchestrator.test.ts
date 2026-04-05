@@ -5,6 +5,20 @@
 import { describe, it, expect, vi } from 'vitest';
 import { orchestrateChat, type OrchestratorDeps } from '@/lib/chat/orchestrator';
 import type { SSEEvent } from '@/lib/utils/sse';
+import { CLARIFY_TOOL } from '@/lib/zai/tools-schema';
+
+/** 테스트용 도구 목록 */
+const TEST_TOOLS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'search_law',
+      description: '법령 검색',
+      parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+    },
+  },
+  CLARIFY_TOOL,
+];
 
 /** 모의 의존성 생성 헬퍼 */
 function createMockDeps(responses: Array<{
@@ -14,6 +28,7 @@ function createMockDeps(responses: Array<{
   let callIndex = 0;
 
   return {
+    tools: TEST_TOOLS,
     zaiComplete: vi.fn().mockImplementation(async () => {
       const resp = responses[callIndex++];
       return {
@@ -69,18 +84,13 @@ describe('orchestrateChat', () => {
       deps,
     );
 
-    // 도구 호출 이벤트 확인
     expect(events.some((e) => e.type === 'tool_call' && e.name === 'search_law')).toBe(true);
-    // 도구 결과 이벤트 확인
     expect(events.some((e) => e.type === 'tool_result')).toBe(true);
-    // 최종 콘텐츠 이벤트 확인
     expect(events.some((e) => e.type === 'content')).toBe(true);
-    // executeTool이 올바른 인자로 호출되었는지 확인
     expect(deps.executeTool).toHaveBeenCalledWith('search_law', '{"query":"임대차"}');
   });
 
   it('최대 5라운드 도구 호출 후 중단한다', async () => {
-    // 6개 응답: 5라운드 도구 호출 + 6번째에서 MAX_TOOL_ROUNDS 초과 처리
     const infiniteToolCalls = Array.from({ length: 6 }, () => ({
       toolCalls: [
         { id: 'call_x', name: 'search_law', arguments: '{"query":"test"}' },
@@ -95,9 +105,7 @@ describe('orchestrateChat', () => {
       deps,
     );
 
-    // zaiComplete는 6번 호출 (0~4 라운드 실행 + 5번째에서 초과 감지)
     expect(deps.zaiComplete).toHaveBeenCalledTimes(6);
-    // 초과 안내 메시지 확인
     expect(
       events.some((e) => e.type === 'content' && e.content?.includes('수집된 정보')),
     ).toBe(true);
@@ -123,18 +131,16 @@ describe('orchestrateChat', () => {
       deps,
     );
 
-    // 질문이 content 이벤트로 전달되는지 확인
     expect(
       events.some((e) => e.type === 'content' && e.content?.includes('계약 기간은?')),
     ).toBe(true);
-    // done 이벤트로 종료 확인
     expect(events[events.length - 1]).toEqual({ type: 'done' });
-    // executeTool은 clarify_situation에서 호출되지 않음
     expect(deps.executeTool).not.toHaveBeenCalled();
   });
 
   it('LLM 응답이 비어있으면 에러 이벤트를 발생시킨다', async () => {
     const deps: OrchestratorDeps = {
+      tools: TEST_TOOLS,
       zaiComplete: vi.fn().mockResolvedValue({ choices: [{}] }),
       executeTool: vi.fn(),
     };

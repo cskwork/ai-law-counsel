@@ -1,121 +1,86 @@
 /**
- * 도구 실행기 테스트
- * - 각 도구 이름별 올바른 디스패치 검증
- * - clarify_situation: 질문 텍스트 반환 검증
- * - 알 수 없는 도구: 에러 메시지 반환 검증
+ * 도구 실행기 테스트 (MCP 기반)
+ * - MCP 도구 호출 포워딩 검증
+ * - clarify_situation: 로컬 처리 검증
+ * - MCP 에러 결과 처리 검증
  * - 잘못된 JSON: 에러 메시지 반환 검증
- * - API 호출 실패 시 에러 메시지 반환 검증
+ * - MCP 호출 실패 시 에러 메시지 반환 검증
  */
 import { describe, it, expect, vi } from 'vitest';
 import { executeToolCall, type ToolExecutorDeps } from '@/lib/chat/tool-executor';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+
+/** MCP 성공 응답 생성 헬퍼 */
+function mcpSuccess(text: string): CallToolResult {
+  return {
+    content: [{ type: 'text', text }],
+  };
+}
+
+/** MCP 에러 응답 생성 헬퍼 */
+function mcpError(text: string): CallToolResult {
+  return {
+    content: [{ type: 'text', text }],
+    isError: true,
+  };
+}
 
 /** 테스트용 모의 의존성 생성 */
 function createMockDeps(): ToolExecutorDeps {
   return {
-    searchLaw: vi.fn().mockResolvedValue({ totalCount: 1, items: [{ lawId: 'L001' }] }),
-    getLawDetail: vi.fn().mockResolvedValue({ lawId: 'L001', lawNameKo: '민법' }),
-    searchPrecedent: vi.fn().mockResolvedValue({ totalCount: 1, items: [{ precedentId: 'P001' }] }),
-    getPrecedentDetail: vi.fn().mockResolvedValue({ precedentId: 'P001', caseName: '판례' }),
-    searchAdminRule: vi.fn().mockResolvedValue({ totalCount: 0, items: [] }),
+    callMcpTool: vi.fn().mockResolvedValue(mcpSuccess('{"totalCount":1,"items":[]}')),
   };
 }
 
 describe('executeToolCall', () => {
-  describe('search_law', () => {
-    it('query와 page를 포함하여 searchLaw를 호출해야 한다', async () => {
+  describe('MCP 도구 포워딩', () => {
+    it('search_law 호출을 MCP 서버로 포워딩한다', async () => {
       const deps = createMockDeps();
       const args = JSON.stringify({ query: '민법', page: 2 });
 
       const result = await executeToolCall('search_law', args, deps);
 
-      expect(deps.searchLaw).toHaveBeenCalledWith({ query: '민법', page: 2 });
-      expect(result).toBe(JSON.stringify({ totalCount: 1, items: [{ lawId: 'L001' }] }, null, 2));
+      expect(deps.callMcpTool).toHaveBeenCalledWith('search_law', { query: '민법', page: 2 });
+      expect(result).toBe('{"totalCount":1,"items":[]}');
     });
 
-    it('page 없이 query만으로 searchLaw를 호출해야 한다', async () => {
+    it('임의의 MCP 도구 이름도 포워딩한다', async () => {
       const deps = createMockDeps();
-      const args = JSON.stringify({ query: '형법' });
+      const args = JSON.stringify({ query: '조세' });
 
-      await executeToolCall('search_law', args, deps);
+      await executeToolCall('search_tax_tribunal', args, deps);
 
-      expect(deps.searchLaw).toHaveBeenCalledWith({ query: '형법' });
-    });
-  });
-
-  describe('get_law_detail', () => {
-    it('lawId로 getLawDetail을 호출해야 한다', async () => {
-      const deps = createMockDeps();
-      const args = JSON.stringify({ lawId: 'L001' });
-
-      const result = await executeToolCall('get_law_detail', args, deps);
-
-      expect(deps.getLawDetail).toHaveBeenCalledWith('L001');
-      expect(result).toBe(JSON.stringify({ lawId: 'L001', lawNameKo: '민법' }, null, 2));
+      expect(deps.callMcpTool).toHaveBeenCalledWith('search_tax_tribunal', { query: '조세' });
     });
   });
 
-  describe('search_precedent', () => {
-    it('query로 searchPrecedent를 호출해야 한다', async () => {
+  describe('MCP 에러 응답', () => {
+    it('isError가 true이면 에러 메시지를 반환한다', async () => {
       const deps = createMockDeps();
-      const args = JSON.stringify({ query: '손해배상' });
+      vi.mocked(deps.callMcpTool).mockResolvedValue(mcpError('도구를 찾을 수 없습니다'));
+      const args = JSON.stringify({ query: '민법' });
 
-      const result = await executeToolCall('search_precedent', args, deps);
+      const result = await executeToolCall('search_law', args, deps);
 
-      expect(deps.searchPrecedent).toHaveBeenCalledWith({ query: '손해배상' });
-      expect(result).toBe(
-        JSON.stringify({ totalCount: 1, items: [{ precedentId: 'P001' }] }, null, 2),
-      );
-    });
-  });
-
-  describe('get_precedent_detail', () => {
-    it('precedentId로 getPrecedentDetail을 호출해야 한다', async () => {
-      const deps = createMockDeps();
-      const args = JSON.stringify({ precedentId: 'P001' });
-
-      const result = await executeToolCall('get_precedent_detail', args, deps);
-
-      expect(deps.getPrecedentDetail).toHaveBeenCalledWith('P001');
-      expect(result).toBe(JSON.stringify({ precedentId: 'P001', caseName: '판례' }, null, 2));
-    });
-  });
-
-  describe('search_administrative_rule', () => {
-    it('query로 searchAdminRule을 호출해야 한다', async () => {
-      const deps = createMockDeps();
-      const args = JSON.stringify({ query: '행정규칙' });
-
-      const result = await executeToolCall('search_administrative_rule', args, deps);
-
-      expect(deps.searchAdminRule).toHaveBeenCalledWith({ query: '행정규칙' });
-      expect(result).toBe(JSON.stringify({ totalCount: 0, items: [] }, null, 2));
+      expect(result).toContain('도구 실행 오류 (search_law)');
+      expect(result).toContain('도구를 찾을 수 없습니다');
     });
   });
 
   describe('clarify_situation', () => {
-    it('질문 텍스트를 포함한 메시지를 반환해야 한다', async () => {
+    it('MCP가 아닌 로컬에서 질문 텍스트를 반환한다', async () => {
       const deps = createMockDeps();
       const args = JSON.stringify({ question: '사건 발생 시기가 언제인가요?' });
 
       const result = await executeToolCall('clarify_situation', args, deps);
 
       expect(result).toBe('[추가 질문] 사건 발생 시기가 언제인가요?');
-    });
-  });
-
-  describe('알 수 없는 도구', () => {
-    it('알 수 없는 도구 이름 에러 메시지를 반환해야 한다', async () => {
-      const deps = createMockDeps();
-      const args = JSON.stringify({ query: 'test' });
-
-      const result = await executeToolCall('unknown_tool', args, deps);
-
-      expect(result).toBe('알 수 없는 도구: unknown_tool');
+      expect(deps.callMcpTool).not.toHaveBeenCalled();
     });
   });
 
   describe('잘못된 JSON', () => {
-    it('파싱 실패 시 에러 메시지를 반환해야 한다', async () => {
+    it('파싱 실패 시 에러 메시지를 반환한다', async () => {
       const deps = createMockDeps();
 
       const result = await executeToolCall('search_law', '{invalid json}', deps);
@@ -124,15 +89,15 @@ describe('executeToolCall', () => {
     });
   });
 
-  describe('API 호출 실패', () => {
-    it('의존성 함수 에러 시 도구 실행 오류 메시지를 반환해야 한다', async () => {
+  describe('MCP 호출 실패', () => {
+    it('네트워크 오류 시 도구 실행 오류 메시지를 반환한다', async () => {
       const deps = createMockDeps();
-      vi.mocked(deps.searchLaw).mockRejectedValue(new Error('API 타임아웃'));
+      vi.mocked(deps.callMcpTool).mockRejectedValue(new Error('MCP 서버 연결 실패'));
       const args = JSON.stringify({ query: '민법' });
 
       const result = await executeToolCall('search_law', args, deps);
 
-      expect(result).toBe('도구 실행 오류 (search_law): API 타임아웃');
+      expect(result).toBe('도구 실행 오류 (search_law): MCP 서버 연결 실패');
     });
   });
 });
