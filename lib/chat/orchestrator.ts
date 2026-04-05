@@ -14,6 +14,7 @@ const MAX_TOOL_ROUNDS = 5;
 /** 오케스트레이터 외부 의존성 (테스트 용이성을 위한 DI) */
 export interface OrchestratorDeps {
   zaiComplete: (messages: ChatMessage[], tools: ToolDefinition[]) => Promise<ZaiResponse>;
+  zaiStream?: (messages: ChatMessage[], tools: ToolDefinition[]) => AsyncGenerator<string>;
   executeTool: (toolName: string, argsJson: string) => Promise<string>;
 }
 
@@ -48,9 +49,12 @@ export async function orchestrateChat(
 
     const toolCalls = message.tool_calls;
 
-    // 도구 호출 없음 -> 최종 답변
+    // 도구 호출 없음 -> 최종 답변 (스트리밍 가능)
     if (!toolCalls || toolCalls.length === 0) {
-      if (message.content) {
+      if (deps.zaiStream) {
+        // 스트리밍 재요청으로 토큰 단위 전송
+        await streamFinalResponse(messages, emit, deps.zaiStream);
+      } else if (message.content) {
         emit({ type: 'content', content: message.content });
       }
       break;
@@ -109,6 +113,17 @@ export async function orchestrateChat(
   }
 
   emit({ type: 'done' });
+}
+
+/** 최종 답변을 스트리밍으로 전송 */
+async function streamFinalResponse(
+  messages: ChatMessage[],
+  emit: (event: SSEEvent) => void,
+  zaiStream: (messages: ChatMessage[], tools: ToolDefinition[]) => AsyncGenerator<string>,
+): Promise<void> {
+  for await (const chunk of zaiStream(messages, LAW_TOOLS)) {
+    emit({ type: 'content', content: chunk });
+  }
 }
 
 /** JSON 문자열을 안전하게 파싱 */

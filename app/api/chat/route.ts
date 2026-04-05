@@ -9,6 +9,7 @@ import { searchAdminRule } from '@/lib/law/search-admin-rule';
 import { executeToolCall } from '@/lib/chat/tool-executor';
 import { orchestrateChat } from '@/lib/chat/orchestrator';
 import { createSSEStream } from '@/lib/utils/sse';
+import { parseZaiStream } from '@/lib/utils/zai-stream';
 import type { ChatMessage } from '@/lib/zai/types';
 
 const MAX_MESSAGES = 50;
@@ -65,6 +66,10 @@ export async function POST(request: NextRequest) {
       (event) => writer.write(event),
       {
         zaiComplete: (msgs, tools) => zaiClient.completeChatWithTools(msgs, tools),
+        zaiStream: async function* (msgs, tools) {
+          const streamResponse = await zaiClient.streamChat(msgs, tools);
+          yield* parseZaiStream(streamResponse);
+        },
         executeTool: (name, args) =>
           executeToolCall(name, args, {
             searchLaw: (params) => searchLaw(lawClient, params),
