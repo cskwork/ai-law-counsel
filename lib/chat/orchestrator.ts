@@ -5,7 +5,6 @@
  */
 import type { ChatMessage, ToolDefinition, ZaiResponse } from '@/lib/zai/types';
 import type { SSEEvent } from '@/lib/utils/sse';
-import { LAW_TOOLS } from '@/lib/zai/tools-schema';
 import { SYSTEM_PROMPT } from './system-prompt';
 
 /** 도구 호출 최대 반복 횟수 */
@@ -16,6 +15,8 @@ export interface OrchestratorDeps {
   zaiComplete: (messages: ChatMessage[], tools: ToolDefinition[]) => Promise<ZaiResponse>;
   zaiStream?: (messages: ChatMessage[], tools: ToolDefinition[]) => AsyncGenerator<string>;
   executeTool: (toolName: string, argsJson: string) => Promise<string>;
+  /** MCP에서 가져온 법률 도구 + clarify_situation */
+  tools: ToolDefinition[];
 }
 
 /**
@@ -37,7 +38,7 @@ export async function orchestrateChat(
   let toolRounds = 0;
 
   while (toolRounds <= MAX_TOOL_ROUNDS) {
-    const response = await deps.zaiComplete(messages, LAW_TOOLS);
+    const response = await deps.zaiComplete(messages, deps.tools);
     const choice = response.choices[0];
     const message = choice?.message;
 
@@ -121,7 +122,7 @@ async function streamFinalResponse(
   emit: (event: SSEEvent) => void,
   zaiStream: (messages: ChatMessage[], tools: ToolDefinition[]) => AsyncGenerator<string>,
 ): Promise<void> {
-  for await (const chunk of zaiStream(messages, LAW_TOOLS)) {
+  for await (const chunk of zaiStream(messages, [])) {
     emit({ type: 'content', content: chunk });
   }
 }
