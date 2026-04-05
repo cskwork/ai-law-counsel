@@ -22,7 +22,7 @@ export function ChatContainer() {
       id: 'welcome',
       type: 'message',
       role: 'system',
-      content: '한국 법률 상담 AI입니다. 법률 관련 질문을 자유롭게 입력해주세요.',
+      content: '법률 관련 질문을 자유롭게 입력해주세요. 법령, 판례, 행정규칙을 검색하여 답변드립니다.',
     },
   ]);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
@@ -170,7 +170,7 @@ export function ChatContainer() {
   }, [conversationHistory]);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-zinc-50">
       <MessageList events={events} isStreaming={isStreaming} />
       <ChatInput onSend={handleSend} disabled={isStreaming} />
     </div>

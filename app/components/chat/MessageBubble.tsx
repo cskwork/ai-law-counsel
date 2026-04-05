@@ -6,15 +6,15 @@ interface MessageBubbleProps {
   content: string;
 }
 
-// 채팅 메시지 말풍선 컴포넌트 (사용자/AI/시스템 역할별 스타일 분기)
+// 메시지 말풍선 (역할별 스타일 분기 + fade-up 애니메이션)
 export function MessageBubble({ role, content }: MessageBubbleProps) {
   const isUser = role === 'user';
   const isSystem = role === 'system';
 
   if (isSystem) {
     return (
-      <div className="flex justify-center my-2">
-        <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1.5 rounded-full">
+      <div className="flex justify-center my-3 animate-fade-up">
+        <div className="bg-zinc-100 text-zinc-500 text-xs px-4 py-1.5 rounded-full tracking-wide">
           {content}
         </div>
       </div>
@@ -22,18 +22,18 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
   }
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} my-2`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} my-1.5 animate-fade-up`}>
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           isUser
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-100 text-gray-900'
+            ? 'bg-zinc-900 text-white'
+            : 'bg-white text-zinc-800 shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100'
         }`}
       >
         {isUser ? (
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
-          <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-900 prose-li:text-gray-900 prose-strong:text-gray-900">
+          <div className="prose prose-sm max-w-none prose-zinc prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-relaxed prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-code:font-mono prose-code:text-[13px] prose-code:bg-zinc-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-pre:bg-zinc-950 prose-pre:text-zinc-100">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
           </div>
         )}
