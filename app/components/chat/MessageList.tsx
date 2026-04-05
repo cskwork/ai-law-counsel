@@ -54,10 +54,11 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
         })}
         {isStreaming && events[events.length - 1]?.type !== 'tool_call' && (
           <div className="flex justify-start my-1.5 animate-fade-up">
-            <div className="rounded-2xl bg-white px-5 py-4 shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100">
-              <div className="flex flex-col gap-2">
-                <div className="h-3 w-48 rounded-md animate-shimmer" />
-                <div className="h-3 w-32 rounded-md animate-shimmer [animation-delay:0.1s]" />
+            <div className="max-w-[90%] sm:max-w-[80%] rounded-2xl bg-white px-5 py-4 shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100">
+              <div className="flex flex-col gap-2.5">
+                <div className="h-3 w-56 rounded-md animate-shimmer" />
+                <div className="h-3 w-72 rounded-md animate-shimmer [animation-delay:0.05s]" />
+                <div className="h-3 w-44 rounded-md animate-shimmer [animation-delay:0.1s]" />
               </div>
             </div>
           </div>
