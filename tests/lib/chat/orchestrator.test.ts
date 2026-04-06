@@ -90,13 +90,15 @@ describe('orchestrateChat', () => {
     expect(deps.executeTool).toHaveBeenCalledWith('search_law', '{"query":"임대차"}');
   });
 
-  it('최대 5라운드 도구 호출 후 중단한다', async () => {
-    const infiniteToolCalls = Array.from({ length: 6 }, () => ({
+  it('최대 10라운드 도구 호출 후 수집된 정보로 최종 답변을 생성한다', async () => {
+    const toolCallResponses = Array.from({ length: 11 }, () => ({
       toolCalls: [
         { id: 'call_x', name: 'search_law', arguments: '{"query":"test"}' },
       ],
     }));
-    const deps = createMockDeps(infiniteToolCalls);
+    // 마지막 응답: 도구 없이 최종 답변 (비스트리밍 fallback 경로)
+    const finalAnswer = { content: '종합하면, 관련 법령에 따르면...' };
+    const deps = createMockDeps([...toolCallResponses, finalAnswer]);
     const events: SSEEvent[] = [];
 
     await orchestrateChat(
@@ -105,9 +107,49 @@ describe('orchestrateChat', () => {
       deps,
     );
 
-    expect(deps.zaiComplete).toHaveBeenCalledTimes(6);
+    // 11회 도구 호출 시도 + 1회 최종 답변 = 12회
+    expect(deps.zaiComplete).toHaveBeenCalledTimes(12);
+    // 마지막 호출은 빈 도구 배열로 호출되어야 함
+    const lastCall = (deps.zaiComplete as ReturnType<typeof vi.fn>).mock.calls[11];
+    expect(lastCall[1]).toEqual([]);
+    // LLM이 생성한 실제 답변이 전달되어야 함
     expect(
-      events.some((e) => e.type === 'content' && e.content?.includes('수집된 정보')),
+      events.some((e) => e.type === 'content' && e.content?.includes('종합하면')),
+    ).toBe(true);
+  });
+
+  it('최대 라운드 초과 시 스트리밍으로 최종 답변을 생성한다', async () => {
+    const toolCallResponses = Array.from({ length: 11 }, () => ({
+      toolCalls: [
+        { id: 'call_x', name: 'search_law', arguments: '{"query":"test"}' },
+      ],
+    }));
+    const deps = createMockDeps(toolCallResponses);
+
+    // 스트리밍 mock 추가
+    const streamedChunks = ['종합적으로 ', '판단하면...'];
+    deps.zaiStream = vi.fn().mockImplementation(async function* () {
+      for (const chunk of streamedChunks) {
+        yield chunk;
+      }
+    });
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat(
+      [{ role: 'user', content: 'test' }],
+      (e) => events.push(e),
+      deps,
+    );
+
+    // 스트리밍이 있으므로 zaiComplete는 11회만 (최종 답변은 스트리밍)
+    expect(deps.zaiComplete).toHaveBeenCalledTimes(11);
+    expect(deps.zaiStream).toHaveBeenCalledTimes(1);
+    // 스트리밍 청크가 content로 전달되어야 함
+    expect(
+      events.some((e) => e.type === 'content' && e.content === '종합적으로 '),
+    ).toBe(true);
+    expect(
+      events.some((e) => e.type === 'content' && e.content === '판단하면...'),
     ).toBe(true);
   });
 
