@@ -8,8 +8,8 @@ import { orchestrateChat } from '@/lib/chat/orchestrator';
 import { createSSEStream } from '@/lib/utils/sse';
 import { parseZaiStream } from '@/lib/utils/zai-stream';
 import type { ChatMessage } from '@/lib/zai/types';
+import { MAX_CONTEXT_MESSAGES } from '@/lib/constants';
 
-const MAX_MESSAGES = 50;
 const MAX_MESSAGE_LENGTH = 2000;
 
 interface ChatRequestBody {
@@ -31,8 +31,8 @@ function validateRequest(body: unknown): ChatRequestBody {
     throw new Error('메시지가 비어있습니다');
   }
 
-  if (messages.length > MAX_MESSAGES) {
-    throw new Error(`메시지는 최대 ${MAX_MESSAGES}개까지 가능합니다`);
+  if (messages.length > MAX_CONTEXT_MESSAGES) {
+    throw new Error(`메시지는 최대 ${MAX_CONTEXT_MESSAGES}개까지 가능합니다`);
   }
 
   for (const msg of messages) {

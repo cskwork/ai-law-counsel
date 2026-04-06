@@ -108,13 +108,15 @@ export default function Home() {
             </div>
           </header>
           <main className="flex-1 overflow-hidden">
-            <ChatContainer
-              key={currentId}
-              initialEvents={activeConversation?.events}
-              initialMessages={activeConversation?.messages}
-              onSave={handleSave}
-              onStreamingChange={setIsStreaming}
-            />
+            {currentId && (
+              <ChatContainer
+                key={currentId}
+                initialEvents={activeConversation?.events}
+                initialMessages={activeConversation?.messages}
+                onSave={handleSave}
+                onStreamingChange={setIsStreaming}
+              />
+            )}
           </main>
         </div>
       </div>

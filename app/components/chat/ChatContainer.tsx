@@ -5,6 +5,7 @@ import { ChatInput } from './ChatInput';
 import { MessageList, type ChatEvent } from './MessageList';
 import type { SSEEvent } from '@/lib/utils/sse';
 import type { Message } from '@/app/types/conversation';
+import { MAX_CONTEXT_MESSAGES } from '@/lib/constants';
 
 const WELCOME_EVENT: ChatEvent = {
   id: 'welcome',
@@ -12,8 +13,6 @@ const WELCOME_EVENT: ChatEvent = {
   role: 'system',
   content: '법률 관련 질문을 자유롭게 입력해주세요. 법령, 판례, 행정규칙을 검색하여 답변드립니다.',
 };
-
-const MAX_CONTEXT_MESSAGES = 20; // API 전송 시 최근 20개 메시지만 포함 (10턴)
 
 const SUGGESTED_QUESTIONS = [
   '전세 보증금을 돌려받지 못하면 어떻게 해야 하나요?',
