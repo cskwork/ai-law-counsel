@@ -1,6 +1,7 @@
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CopyButton } from './CopyButton';
+import { sanitizeContent } from '@/lib/utils/sanitize-content';
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant' | 'system';
@@ -98,7 +99,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           prose-td:px-3 prose-td:py-2 prose-td:text-zinc-700 prose-td:border-zinc-200
           prose-hr:my-4 prose-hr:border-zinc-200
         ">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{sanitizeContent(content)}</ReactMarkdown>
         </div>
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <CopyButton content={content} />
