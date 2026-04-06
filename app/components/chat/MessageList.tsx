@@ -28,10 +28,8 @@ const SCROLL_THRESHOLD = 100; // 하단에서 100px 이내면 auto-scroll 유지
 export function MessageList({ events, isStreaming }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
-  const isProgrammaticScrollRef = useRef(false);
 
   const handleScroll = useCallback(() => {
-    if (isProgrammaticScrollRef.current) return;
     const el = containerRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
@@ -41,11 +39,9 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
   useEffect(() => {
     const el = containerRef.current;
     if (shouldAutoScrollRef.current && el) {
-      isProgrammaticScrollRef.current = true;
       el.scrollTop = el.scrollHeight;
-      isProgrammaticScrollRef.current = false;
     }
-  }, [events, isStreaming]);
+  }, [events]);
 
   return (
     <div
