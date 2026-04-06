@@ -18,6 +18,7 @@ export default function Home() {
   } = useConversationHistory();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // 새 대화용 안정 ID (activeId가 null일 때 사용)
   const pendingIdRef = useRef(crypto.randomUUID());
@@ -30,16 +31,18 @@ export default function Home() {
   }, []);
 
   const handleNewChat = useCallback(() => {
+    if (isStreaming) return; // 스트리밍 중 새 채팅 방지
     setActiveId(null);
     pendingIdRef.current = crypto.randomUUID();
-  }, [setActiveId]);
+  }, [setActiveId, isStreaming]);
 
   const handleSelectConversation = useCallback(
     (id: string) => {
+      if (isStreaming) return; // 스트리밍 중 대화 전환 방지
       setActiveId(id);
       setSidebarOpen(false);
     },
-    [setActiveId]
+    [setActiveId, isStreaming]
   );
 
   const handleSave = useCallback(
@@ -60,17 +63,17 @@ export default function Home() {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-zinc-50">
       <Disclaimer />
+      <Sidebar
+        conversations={conversations}
+        activeId={activeId}
+        isOpen={sidebarOpen}
+        onToggle={handleToggleSidebar}
+        onSelect={handleSelectConversation}
+        onNew={handleNewChat}
+        onDelete={remove}
+        onDeleteAll={removeAll}
+      />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          conversations={conversations}
-          activeId={activeId}
-          isOpen={sidebarOpen}
-          onToggle={handleToggleSidebar}
-          onSelect={handleSelectConversation}
-          onNew={handleNewChat}
-          onDelete={remove}
-          onDeleteAll={removeAll}
-        />
         <div className="flex flex-1 flex-col min-w-0">
           <header className="sticky top-0 z-10 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md px-4 py-3">
             <div className="flex items-center justify-center relative max-w-3xl mx-auto">
@@ -103,6 +106,7 @@ export default function Home() {
               initialEvents={activeConversation?.events}
               initialMessages={activeConversation?.messages}
               onSave={handleSave}
+              onStreamingChange={setIsStreaming}
             />
           </main>
         </div>
