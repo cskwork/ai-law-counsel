@@ -26,11 +26,12 @@ const SCROLL_THRESHOLD = 100; // 하단에서 100px 이내면 auto-scroll 유지
 
 // 메시지 목록 (스마트 자동 스크롤 + 스켈레톤 로더)
 export function MessageList({ events, isStreaming }: MessageListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
+  const isProgrammaticScrollRef = useRef(false);
 
   const handleScroll = useCallback(() => {
+    if (isProgrammaticScrollRef.current) return;
     const el = containerRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
@@ -38,8 +39,11 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
   }, []);
 
   useEffect(() => {
-    if (shouldAutoScrollRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = containerRef.current;
+    if (shouldAutoScrollRef.current && el) {
+      isProgrammaticScrollRef.current = true;
+      el.scrollTop = el.scrollHeight;
+      isProgrammaticScrollRef.current = false;
     }
   }, [events, isStreaming]);
 
@@ -86,7 +90,6 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
     </div>
   );
