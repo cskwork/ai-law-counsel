@@ -8,7 +8,11 @@ import type { SSEEvent, SourceItem } from '@/lib/utils/sse';
 import { SYSTEM_PROMPT } from './system-prompt';
 
 /** 도구 호출 최대 반복 횟수 */
-const MAX_TOOL_ROUNDS = 5;
+const MAX_TOOL_ROUNDS = 10;
+
+/** 도구 호출 한도 초과 시 LLM에게 전달하는 안내 메시지 */
+const TOOL_LIMIT_GUIDE =
+  '도구 호출 한도에 도달했습니다. 지금까지 수집된 정보만을 기반으로 최종 답변을 생성하세요. 추가 검색이 필요한 부분이 있다면 답변에 그 점을 명시하세요.';
 
 /** 오케스트레이터 외부 의존성 (테스트 용이성을 위한 DI) */
 export interface OrchestratorDeps {
@@ -62,12 +66,19 @@ export async function orchestrateChat(
       break;
     }
 
-    // 도구 호출 횟수 초과
+    // 도구 호출 횟수 초과 -> 수집된 정보로 최종 답변 생성
     if (toolRounds >= MAX_TOOL_ROUNDS) {
-      emit({
-        type: 'content',
-        content: '수집된 정보를 기반으로 답변드립니다. 추가적인 법령 검색이 필요할 수 있습니다.',
-      });
+      messages.push({ role: 'system', content: TOOL_LIMIT_GUIDE });
+
+      if (deps.zaiStream) {
+        await streamFinalResponse(messages, emit, deps.zaiStream);
+      } else {
+        const finalResponse = await deps.zaiComplete(messages, []);
+        const finalContent = finalResponse.choices[0]?.message?.content;
+        if (finalContent) {
+          emit({ type: 'content', content: finalContent });
+        }
+      }
       break;
     }
 

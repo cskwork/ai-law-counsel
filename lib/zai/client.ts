@@ -59,7 +59,7 @@ export class ZaiClient {
       model: MODEL,
       messages,
       stream: true,
-      ...(tools && { tools, tool_choice: 'auto' as const }),
+      ...(tools && tools.length > 0 && { tools, tool_choice: 'auto' as const }),
     };
 
     const response = await fetch(API_URL, {
