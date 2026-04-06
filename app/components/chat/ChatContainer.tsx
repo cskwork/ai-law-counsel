@@ -144,6 +144,16 @@ export function ChatContainer() {
                 break;
 
               case 'done':
+                if (event.sources && event.sources.length > 0) {
+                  setEvents((prev) => [
+                    ...prev,
+                    {
+                      id: nextId(),
+                      type: 'sources',
+                      sources: event.sources,
+                    },
+                  ]);
+                }
                 break;
             }
           } catch {

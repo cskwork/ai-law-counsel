@@ -4,7 +4,7 @@
  * - SSE 이벤트로 진행 상황을 클라이언트에 전달
  */
 import type { ChatMessage, ToolDefinition, ZaiResponse } from '@/lib/zai/types';
-import type { SSEEvent } from '@/lib/utils/sse';
+import type { SSEEvent, SourceItem } from '@/lib/utils/sse';
 import { SYSTEM_PROMPT } from './system-prompt';
 
 /** 도구 호출 최대 반복 횟수 */
@@ -35,6 +35,7 @@ export async function orchestrateChat(
     ...userMessages,
   ];
 
+  const collectedSources: SourceItem[] = [];
   let toolRounds = 0;
 
   while (toolRounds <= MAX_TOOL_ROUNDS) {
@@ -97,6 +98,8 @@ export async function orchestrateChat(
 
       const result = await deps.executeTool(name, argsJson);
 
+      collectedSources.push(...extractSources(name, result));
+
       emit({
         type: 'tool_result',
         name,
@@ -113,7 +116,11 @@ export async function orchestrateChat(
     toolRounds++;
   }
 
-  emit({ type: 'done' });
+  const dedupedSources = deduplicateSources(collectedSources);
+  emit({
+    type: 'done',
+    ...(dedupedSources.length > 0 ? { sources: dedupedSources } : {}),
+  });
 }
 
 /** 최종 답변을 스트리밍으로 전송 */
@@ -134,6 +141,63 @@ function safeParseJson(json: string): Record<string, unknown> | undefined {
   } catch {
     return undefined;
   }
+}
+
+/** 최대 출처 수집 수 (검색 결과 당) */
+const MAX_SOURCES_PER_RESULT = 10;
+
+/** 법령은 이름 기반 URL이 항상 유효 (판례/행정규칙은 URL 패턴이 불확실) */
+function buildLawUrl(lawName: string): string {
+  return `https://www.law.go.kr/법령/${encodeURIComponent(lawName)}`;
+}
+
+/** 도구 결과에서 출처 정보 추출 */
+export function extractSources(toolName: string, result: string): SourceItem[] {
+  try {
+    const parsed = JSON.parse(result) as Record<string, unknown>;
+    const sources: SourceItem[] = [];
+
+    if (toolName === 'search_law' && Array.isArray(parsed.items)) {
+      for (const item of parsed.items.slice(0, MAX_SOURCES_PER_RESULT)) {
+        if (item.lawNameKo && item.lawId) {
+          const name = String(item.lawNameKo);
+          sources.push({ type: 'law', name, identifier: String(item.lawId), url: buildLawUrl(name) });
+        }
+      }
+    } else if (toolName === 'get_law_detail' && parsed.lawNameKo && parsed.lawId) {
+      const name = String(parsed.lawNameKo);
+      sources.push({ type: 'law', name, identifier: String(parsed.lawId), url: buildLawUrl(name) });
+    } else if (toolName === 'search_precedent' && Array.isArray(parsed.items)) {
+      for (const item of parsed.items.slice(0, MAX_SOURCES_PER_RESULT)) {
+        if (item.caseName && item.caseNumber) {
+          sources.push({ type: 'precedent', name: String(item.caseName), identifier: String(item.caseNumber) });
+        }
+      }
+    } else if (toolName === 'get_precedent_detail' && parsed.caseName && parsed.caseNumber) {
+      sources.push({ type: 'precedent', name: String(parsed.caseName), identifier: String(parsed.caseNumber) });
+    } else if (toolName === 'search_administrative_rule' && Array.isArray(parsed.items)) {
+      for (const item of parsed.items.slice(0, MAX_SOURCES_PER_RESULT)) {
+        if (item.adminRuleName && item.adminRuleId) {
+          sources.push({ type: 'admin_rule', name: String(item.adminRuleName), identifier: String(item.adminRuleId) });
+        }
+      }
+    }
+
+    return sources;
+  } catch {
+    return [];
+  }
+}
+
+/** 중복 출처 제거 (type+identifier 기준) */
+export function deduplicateSources(sources: readonly SourceItem[]): SourceItem[] {
+  const seen = new Set<string>();
+  return sources.filter((s) => {
+    const key = `${s.type}:${s.identifier}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /** 도구 결과를 사용자 표시용으로 요약 */
