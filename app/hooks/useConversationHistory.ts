@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { StoredConversation, Message } from '@/app/types/conversation';
 import type { ChatEvent } from '@/app/components/chat/MessageList';
 
@@ -63,8 +63,13 @@ export interface UseConversationHistoryReturn {
 }
 
 export function useConversationHistory(): UseConversationHistoryReturn {
-  const [conversations, setConversations] = useState<StoredConversation[]>(loadConversations);
+  const [conversations, setConversations] = useState<StoredConversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // hydration 이후 localStorage에서 대화 목록 로드
+  useEffect(() => {
+    setConversations(loadConversations());
+  }, []);
 
   const createNew = useCallback((): string => {
     const id = crypto.randomUUID();

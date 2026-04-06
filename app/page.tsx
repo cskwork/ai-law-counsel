@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Disclaimer } from '@/app/components/common/Disclaimer';
 import { ChatContainer } from '@/app/components/chat/ChatContainer';
 import { Sidebar } from '@/app/components/chat/Sidebar';
@@ -21,10 +21,17 @@ export default function Home() {
   const [isStreaming, setIsStreaming] = useState(false);
 
   // 새 대화용 안정 ID (activeId가 null일 때 사용)
-  const pendingIdRef = useRef(crypto.randomUUID());
+  const [pendingId, setPendingId] = useState('');
+
+  // hydration 이후 UUID 생성
+  useEffect(() => {
+    if (!pendingId) {
+      setPendingId(crypto.randomUUID());
+    }
+  }, [pendingId]);
 
   // 현재 대화 ID: 기존 대화 또는 새 대화의 pending ID
-  const currentId = activeId ?? pendingIdRef.current;
+  const currentId = activeId ?? pendingId;
 
   const handleToggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev);
@@ -33,7 +40,7 @@ export default function Home() {
   const handleNewChat = useCallback(() => {
     if (isStreaming) return; // 스트리밍 중 새 채팅 방지
     setActiveId(null);
-    pendingIdRef.current = crypto.randomUUID();
+    setPendingId(crypto.randomUUID());
   }, [setActiveId, isStreaming]);
 
   const handleSelectConversation = useCallback(
@@ -76,7 +83,7 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col min-w-0">
           <header className="sticky top-0 z-10 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md px-4 py-3">
-            <div className="flex items-center justify-center relative max-w-3xl mx-auto">
+            <div className="flex items-center justify-center relative max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto">
               <button
                 onClick={handleToggleSidebar}
                 className="absolute left-0 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
