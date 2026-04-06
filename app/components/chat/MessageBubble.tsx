@@ -1,5 +1,6 @@
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { CopyButton } from './CopyButton';
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant' | 'system';
@@ -62,9 +63,14 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
 
   if (isUser) {
     return (
-      <div className="flex justify-end my-1.5 animate-fade-up">
-        <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl bg-zinc-900 px-4 py-3 text-sm leading-relaxed text-white">
-          <p className="whitespace-pre-wrap">{content}</p>
+      <div className="group flex justify-end my-1.5 animate-fade-up">
+        <div className="flex items-start gap-1">
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-2">
+            <CopyButton content={content} />
+          </div>
+          <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl bg-zinc-900 px-4 py-3 text-sm leading-relaxed text-white">
+            <p className="whitespace-pre-wrap">{content}</p>
+          </div>
         </div>
       </div>
     );
@@ -72,8 +78,8 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
 
   // assistant 응답: 법률 콘텐츠 가독성 최적화
   return (
-    <div className="flex justify-start my-1.5 animate-fade-up">
-      <div className="max-w-[90%] sm:max-w-[80%] rounded-2xl bg-white px-5 py-4 text-sm shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100">
+    <div className="group flex justify-start my-1.5 animate-fade-up">
+      <div className="max-w-[90%] sm:max-w-[80%] rounded-2xl bg-white px-5 py-4 text-sm shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100 relative">
         <div className="
           prose prose-sm prose-zinc max-w-none
           prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-zinc-900
@@ -93,6 +99,9 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           prose-hr:my-4 prose-hr:border-zinc-200
         ">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{content}</ReactMarkdown>
+        </div>
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <CopyButton content={content} />
         </div>
       </div>
     </div>
