@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { ToolCallIndicator } from './ToolCallIndicator';
 import { SourcesFooter } from './SourcesFooter';
@@ -22,16 +22,33 @@ interface MessageListProps {
   isStreaming: boolean;
 }
 
-// 메시지 목록 (자동 스크롤 + 스켈레톤 로더)
+const SCROLL_THRESHOLD = 100; // 하단에서 100px 이내면 auto-scroll 유지
+
+// 메시지 목록 (스마트 자동 스크롤 + 스켈레톤 로더)
 export function MessageList({ events, isStreaming }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+
+  const handleScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom <= SCROLL_THRESHOLD;
+  }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (shouldAutoScrollRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [events, isStreaming]);
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6">
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6"
+    >
       <div className="max-w-3xl mx-auto space-y-0.5">
         {events.map((event) => {
           if (event.type === 'message' && event.role && event.content) {
