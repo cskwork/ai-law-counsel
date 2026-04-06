@@ -69,7 +69,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-2">
             <CopyButton content={content} />
           </div>
-          <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl bg-zinc-900 px-4 py-3 text-sm leading-relaxed text-white">
+          <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] rounded-2xl bg-zinc-900 px-4 py-3 text-sm leading-relaxed text-white">
             <p className="whitespace-pre-wrap">{content}</p>
           </div>
         </div>
@@ -80,7 +80,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
   // assistant 응답: 법률 콘텐츠 가독성 최적화
   return (
     <div className="group flex justify-start my-1.5 animate-fade-up">
-      <div className="max-w-[90%] sm:max-w-[80%] rounded-2xl bg-white px-5 py-4 text-sm shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100 relative">
+      <div className="max-w-[90%] sm:max-w-[80%] lg:max-w-[75%] rounded-2xl bg-white px-5 py-4 text-sm shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100 relative">
         <div className="
           prose prose-sm prose-zinc max-w-none
           prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-zinc-900

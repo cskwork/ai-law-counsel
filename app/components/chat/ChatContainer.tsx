@@ -219,7 +219,7 @@ export function ChatContainer({ initialEvents, initialMessages, onSave, onStream
           <p className="mb-6 text-sm text-zinc-500">
             자주 묻는 법률 질문을 선택하거나, 직접 질문을 입력하세요.
           </p>
-          <div className="grid gap-2 sm:grid-cols-2 max-w-2xl w-full">
+          <div className="grid gap-2 sm:grid-cols-2 max-w-2xl lg:max-w-4xl xl:max-w-5xl w-full">
             {SUGGESTED_QUESTIONS.map((question) => (
               <button
                 key={question}

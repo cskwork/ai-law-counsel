@@ -16,7 +16,7 @@ export function SourcesFooter({ sources }: SourcesFooterProps) {
 
   return (
     <div className="flex justify-start my-1.5 animate-fade-up">
-      <div className="max-w-[90%] sm:max-w-[80%] rounded-2xl bg-white px-5 py-3 text-sm shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100">
+      <div className="max-w-[90%] sm:max-w-[80%] lg:max-w-[75%] rounded-2xl bg-white px-5 py-3 text-sm shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100">
         <details open>
           <summary className="cursor-pointer select-none text-xs font-medium text-zinc-500 tracking-wide hover:text-zinc-700 transition-colors">
             참조 출처 ({sources.length}건)
