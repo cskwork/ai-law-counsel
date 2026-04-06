@@ -3,7 +3,7 @@
  * - 도구 호출 없는 직접 응답, 도구 호출 루프, 최대 라운드 제한, clarify_situation 처리
  */
 import { describe, it, expect, vi } from 'vitest';
-import { orchestrateChat, type OrchestratorDeps } from '@/lib/chat/orchestrator';
+import { orchestrateChat, extractSources, deduplicateSources, type OrchestratorDeps } from '@/lib/chat/orchestrator';
 import type { SSEEvent } from '@/lib/utils/sse';
 import { CLARIFY_TOOL } from '@/lib/zai/tools-schema';
 
@@ -178,6 +178,38 @@ describe('orchestrateChat', () => {
     expect(toolResultEvent?.summary).toBe('5건 발견');
   });
 
+  it('도구 호출 후 done 이벤트에 sources가 포함된다', async () => {
+    const deps = createMockDeps([
+      {
+        toolCalls: [
+          { id: 'call_1', name: 'search_law', arguments: '{"query":"임대차"}' },
+        ],
+      },
+      { content: '결과입니다.' },
+    ]);
+    deps.executeTool = vi.fn().mockResolvedValue(
+      '{"totalCount":1,"items":[{"lawNameKo":"주택임대차보호법","lawId":"14450"}]}',
+    );
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat(
+      [{ role: 'user', content: '임대차법' }],
+      (e) => events.push(e),
+      deps,
+    );
+
+    const doneEvent = events[events.length - 1];
+    expect(doneEvent.type).toBe('done');
+    expect(doneEvent.sources).toBeDefined();
+    expect(doneEvent.sources).toHaveLength(1);
+    expect(doneEvent.sources![0]).toMatchObject({
+      type: 'law',
+      name: '주택임대차보호법',
+      identifier: '14450',
+    });
+    expect(doneEvent.sources![0].url).toContain('law.go.kr');
+  });
+
   it('도구 결과에 lawNameKo가 있으면 법령명 요약을 생성한다', async () => {
     const deps = createMockDeps([
       {
@@ -198,5 +230,66 @@ describe('orchestrateChat', () => {
 
     const toolResultEvent = events.find((e) => e.type === 'tool_result');
     expect(toolResultEvent?.summary).toBe('민법 조회 완료');
+  });
+});
+
+describe('extractSources', () => {
+  it('search_law 결과에서 법령 출처를 추출한다', () => {
+    const result = JSON.stringify({
+      totalCount: 2,
+      items: [
+        { lawNameKo: '민법', lawId: '10101' },
+        { lawNameKo: '상법', lawId: '10102' },
+      ],
+    });
+    const sources = extractSources('search_law', result);
+    expect(sources).toHaveLength(2);
+    expect(sources[0]).toMatchObject({ type: 'law', name: '민법', identifier: '10101' });
+    expect(sources[0].url).toContain('law.go.kr');
+    expect(sources[1]).toMatchObject({ type: 'law', name: '상법', identifier: '10102' });
+  });
+
+  it('get_law_detail 결과에서 법령 출처를 추출한다', () => {
+    const result = JSON.stringify({ lawNameKo: '민법', lawId: '10101', articles: [] });
+    const sources = extractSources('get_law_detail', result);
+    expect(sources).toHaveLength(1);
+    expect(sources[0]).toMatchObject({ type: 'law', name: '민법' });
+  });
+
+  it('search_precedent 결과에서 판례 출처를 추출한다', () => {
+    const result = JSON.stringify({
+      totalCount: 1,
+      items: [{ caseName: '사기 사건', caseNumber: '2023다12345' }],
+    });
+    const sources = extractSources('search_precedent', result);
+    expect(sources).toHaveLength(1);
+    expect(sources[0]).toMatchObject({ type: 'precedent', name: '사기 사건', identifier: '2023다12345' });
+    expect(sources[0].url).toBeUndefined();
+  });
+
+  it('잘못된 JSON이면 빈 배열을 반환한다', () => {
+    expect(extractSources('search_law', 'not json')).toEqual([]);
+  });
+
+  it('최대 10건까지만 추출한다', () => {
+    const items = Array.from({ length: 15 }, (_, i) => ({
+      lawNameKo: `법령${i}`,
+      lawId: `${i}`,
+    }));
+    const result = JSON.stringify({ totalCount: 15, items });
+    const sources = extractSources('search_law', result);
+    expect(sources).toHaveLength(10);
+  });
+});
+
+describe('deduplicateSources', () => {
+  it('동일한 type+identifier 출처를 중복 제거한다', () => {
+    const sources = [
+      { type: 'law' as const, name: '민법', identifier: '10101', url: 'a' },
+      { type: 'law' as const, name: '민법', identifier: '10101', url: 'a' },
+      { type: 'precedent' as const, name: '사건', identifier: '2023다1' },
+    ];
+    const result = deduplicateSources(sources);
+    expect(result).toHaveLength(2);
   });
 });

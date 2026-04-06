@@ -3,15 +3,18 @@
 import { useRef, useEffect } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { ToolCallIndicator } from './ToolCallIndicator';
+import { SourcesFooter } from './SourcesFooter';
+import type { SourceItem } from '@/lib/utils/sse';
 
 export interface ChatEvent {
   id: string;
-  type: 'message' | 'tool_call' | 'tool_result';
+  type: 'message' | 'tool_call' | 'tool_result' | 'sources';
   role?: 'user' | 'assistant' | 'system';
   content?: string;
   toolName?: string;
   toolStatus?: 'calling' | 'done';
   toolSummary?: string;
+  sources?: SourceItem[];
 }
 
 interface MessageListProps {
@@ -49,6 +52,9 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
                 summary={event.toolSummary}
               />
             );
+          }
+          if (event.type === 'sources' && event.sources && event.sources.length > 0) {
+            return <SourcesFooter key={event.id} sources={event.sources} />;
           }
           return null;
         })}

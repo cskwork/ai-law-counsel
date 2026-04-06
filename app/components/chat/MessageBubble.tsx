@@ -1,10 +1,49 @@
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
+
+// 법률 콘텐츠 가독성 최적화 커스텀 렌더러
+const markdownComponents: Components = {
+  h2: ({ children }) => (
+    <h2 className="mt-6 mb-3 pb-2 border-b border-zinc-200 text-base font-semibold tracking-tight text-zinc-900">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mt-4 mb-2 pl-3 border-l-2 border-blue-400 text-sm font-semibold text-zinc-800">
+      {children}
+    </h3>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="my-3 rounded-r-lg border-l-4 border-blue-400 bg-blue-50/60 px-4 py-2 text-sm text-zinc-700 not-italic [&>p]:my-1">
+      {children}
+    </blockquote>
+  ),
+  table: ({ children }) => (
+    <div className="my-3 overflow-x-auto rounded-lg ring-1 ring-zinc-200 scrollbar-thin">
+      <table className="w-full border-collapse text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200">{children}</thead>
+  ),
+  th: ({ children }) => (
+    <th className="px-3 py-2.5 text-left text-xs font-semibold text-zinc-600 tracking-wide">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-2.5 text-zinc-700 border-t border-zinc-100">{children}</td>
+  ),
+  tr: ({ children }) => (
+    <tr className="transition-colors hover:bg-zinc-50/80">{children}</tr>
+  ),
+  hr: () => <hr className="my-5 border-zinc-200" />,
+};
 
 // 메시지 말풍선 (법률 콘텐츠 가독성 최적화)
 export function MessageBubble({ role, content }: MessageBubbleProps) {
@@ -53,7 +92,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           prose-td:px-3 prose-td:py-2 prose-td:text-zinc-700 prose-td:border-zinc-200
           prose-hr:my-4 prose-hr:border-zinc-200
         ">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{content}</ReactMarkdown>
         </div>
       </div>
     </div>
