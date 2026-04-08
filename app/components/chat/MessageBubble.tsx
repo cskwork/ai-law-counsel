@@ -91,7 +91,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-2">
             <CopyButton content={content} />
           </div>
-          <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] rounded-t-xl rounded-bl-xl rounded-br-sm bg-authority-deep px-4 py-3 text-sm leading-relaxed text-ink-inverse">
+          <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] rounded-t-xl rounded-bl-xl rounded-br-sm bg-authority-deep px-4 py-3 text-base leading-relaxed text-ink-inverse">
             <p className="whitespace-pre-wrap">{content}</p>
           </div>
         </div>
@@ -107,7 +107,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
     <div className="group my-3 animate-settle">
       <div className="max-w-[92%] sm:max-w-[85%] lg:max-w-[80%] border-l-[3px] border-authority-light pl-5 pr-2 py-1 relative">
         <div className="
-          prose prose-sm max-w-none
+          prose prose-base max-w-none
           prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-ink-primary
           prose-h2:text-base prose-h2:mt-5 prose-h2:mb-2 prose-h2:font-display
           prose-h3:text-sm prose-h3:mt-4 prose-h3:mb-1.5 prose-h3:font-display
