@@ -3,8 +3,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { ChatInput } from './ChatInput';
 import { MessageList, type ChatEvent } from './MessageList';
+import { FileUpload, type UploadResult } from './FileUpload';
 import type { SSEEvent } from '@/lib/utils/sse';
 import type { Message } from '@/app/types/conversation';
+import type { DocumentContext } from '@/lib/document/context';
 import { MAX_CONTEXT_MESSAGES } from '@/lib/constants';
 
 const WELCOME_EVENT: ChatEvent = {
@@ -19,7 +21,9 @@ const SUGGESTED_QUESTIONS = [
   '교통사고 합의금 적정 금액은 어떻게 산정하나요?',
   '직장에서 부당해고를 당했을 때 대처 방법은?',
   '온라인 쇼핑 환불 거부 시 소비자 권리는?',
-  '이혼 시 재산분할 기준은 어떻게 되나요?',
+  '임대차 계약서 작성해줘',
+  '근로계약서 만들어줘',
+  '내용증명 작성을 도와주세요',
   '층간소음 분쟁 해결 방법과 관련 법률은?',
 ];
 
@@ -44,14 +48,42 @@ export function ChatContainer({ initialEvents, initialMessages, onSave, onStream
     initialMessages ?? []
   );
   const [isStreaming, setIsStreaming] = useState(false);
+  const [pendingDocument, setPendingDocument] = useState<DocumentContext | null>(null);
   const prevStreamingRef = useRef(false);
 
+  const handleUploadComplete = useCallback((result: UploadResult) => {
+    const docContext: DocumentContext = {
+      fileName: result.fileName,
+      fileType: result.fileType as 'pdf' | 'docx' | 'txt',
+      fileSize: result.fileSize,
+      extractedText: result.extractedText,
+      extractedTextLength: result.extractedTextLength,
+    };
+    setPendingDocument(docContext);
+
+    // 업로드 성공 알림 이벤트
+    setEvents((prev) => [
+      ...prev,
+      {
+        id: nextId(),
+        type: 'message',
+        role: 'system',
+        content: `"${result.fileName}" 업로드 완료 (${result.extractedTextLength.toLocaleString()}자 추출). 분석할 내용을 입력하세요.`,
+      },
+    ]);
+  }, []);
+
   const handleSend = useCallback(async (userMessage: string) => {
+    // 문서 첨부 표시
+    const displayContent = pendingDocument
+      ? `[${pendingDocument.fileName}] ${userMessage}`
+      : userMessage;
+
     const userEvent: ChatEvent = {
       id: nextId(),
       type: 'message',
       role: 'user',
-      content: userMessage,
+      content: displayContent,
     };
     setEvents((prev) => [...prev, userEvent]);
 
@@ -62,15 +94,24 @@ export function ChatContainer({ initialEvents, initialMessages, onSave, onStream
     setConversationHistory(updatedHistory);
     setIsStreaming(true);
 
+    // documentContext를 요청에 포함하고 초기화
+    const currentDoc = pendingDocument;
+    setPendingDocument(null);
+
     let assistantContent = '';
 
     try {
+      const requestBody: Record<string, unknown> = {
+        messages: updatedHistory.slice(-MAX_CONTEXT_MESSAGES).map((m) => ({ role: m.role, content: m.content })),
+      };
+      if (currentDoc) {
+        requestBody.documentContext = currentDoc;
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedHistory.slice(-MAX_CONTEXT_MESSAGES).map((m) => ({ role: m.role, content: m.content })),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -195,7 +236,7 @@ export function ChatContainer({ initialEvents, initialMessages, onSave, onStream
     } finally {
       setIsStreaming(false);
     }
-  }, [conversationHistory]);
+  }, [conversationHistory, pendingDocument]);
 
   // 스트리밍 상태 변경 알림
   useEffect(() => {
@@ -236,6 +277,25 @@ export function ChatContainer({ initialEvents, initialMessages, onSave, onStream
       ) : (
         <MessageList events={events} isStreaming={isStreaming} />
       )}
+      <div className="border-t border-zinc-200/60 bg-white px-4 pt-2">
+        <FileUpload onUploadComplete={handleUploadComplete} disabled={isStreaming} />
+        {pendingDocument && (
+          <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-xs text-blue-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
+              <path d="M3.5 2A1.5 1.5 0 002 3.5v9A1.5 1.5 0 003.5 14h9a1.5 1.5 0 001.5-1.5v-7A1.5 1.5 0 0012.5 5H10V3.5A1.5 1.5 0 008.5 2h-5z" />
+            </svg>
+            <span className="truncate font-medium">{pendingDocument.fileName}</span>
+            <span className="text-blue-500">({pendingDocument.extractedTextLength.toLocaleString()}자)</span>
+            <button
+              onClick={() => setPendingDocument(null)}
+              className="ml-auto text-blue-400 hover:text-blue-600"
+              title="문서 제거"
+            >
+              x
+            </button>
+          </div>
+        )}
+      </div>
       <ChatInput onSend={handleSend} disabled={isStreaming} />
     </div>
   );

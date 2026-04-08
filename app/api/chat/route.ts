@@ -9,11 +9,13 @@ import { createSSEStream } from '@/lib/utils/sse';
 import { parseZaiStream } from '@/lib/utils/zai-stream';
 import type { ChatMessage } from '@/lib/zai/types';
 import { MAX_CONTEXT_MESSAGES } from '@/lib/constants';
+import { validateDocumentContext, type DocumentContext } from '@/lib/document/context';
 
 const MAX_MESSAGE_LENGTH = 2000;
 
 interface ChatRequestBody {
   messages: ChatMessage[];
+  documentContext?: DocumentContext;
 }
 
 function validateRequest(body: unknown): ChatRequestBody {
@@ -21,7 +23,7 @@ function validateRequest(body: unknown): ChatRequestBody {
     throw new Error('요청 본문이 비어있습니다');
   }
 
-  const { messages } = body as Record<string, unknown>;
+  const { messages, documentContext } = body as Record<string, unknown>;
 
   if (!Array.isArray(messages)) {
     throw new Error('messages는 배열이어야 합니다');
@@ -44,13 +46,24 @@ function validateRequest(body: unknown): ChatRequestBody {
     }
   }
 
-  return { messages: messages as ChatMessage[] };
+  // documentContext 검증 (선택적)
+  if (documentContext) {
+    const docValidation = validateDocumentContext(documentContext as DocumentContext);
+    if (!docValidation.valid) {
+      throw new Error(docValidation.error);
+    }
+  }
+
+  return {
+    messages: messages as ChatMessage[],
+    documentContext: documentContext as DocumentContext | undefined,
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages } = validateRequest(body);
+    const { messages, documentContext } = validateRequest(body);
 
     const zaiClient = createZaiClient();
 
@@ -60,8 +73,17 @@ export async function POST(request: NextRequest) {
 
     const { stream, writer } = createSSEStream();
 
+    // documentContext가 있으면 마지막 사용자 메시지에 문서 텍스트 첨부
+    const enrichedMessages = documentContext
+      ? messages.map((msg, i) =>
+          i === messages.length - 1 && msg.role === 'user'
+            ? { ...msg, content: `[문서 분석 요청: ${documentContext.fileName}]\n\n--- 추출된 문서 내용 ---\n${documentContext.extractedText}\n--- 문서 끝 ---\n\n${msg.content}` }
+            : msg
+        )
+      : messages;
+
     const orchestrationPromise = orchestrateChat(
-      messages,
+      enrichedMessages,
       (event) => writer.write(event),
       {
         tools: llmTools,

@@ -1,6 +1,8 @@
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CopyButton } from './CopyButton';
+import { CitationCard } from './CitationCard';
+import { DocumentDownload } from './DocumentDownload';
 import { sanitizeContent } from '@/lib/utils/sanitize-content';
 
 interface MessageBubbleProps {
@@ -45,6 +47,18 @@ const markdownComponents: Components = {
     <tr className="transition-colors hover:bg-zinc-50/80">{children}</tr>
   ),
   hr: () => <hr className="my-5 border-zinc-200" />,
+  a: ({ href, children }) => {
+    // cite: 프로토콜 감지 시 CitationCard 렌더링
+    if (href && href.startsWith('cite:')) {
+      return <CitationCard citeUrl={href}>{children}</CitationCard>;
+    }
+    // 일반 링크
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+        {children}
+      </a>
+    );
+  },
 };
 
 // 메시지 말풍선 (법률 콘텐츠 가독성 최적화)
@@ -77,6 +91,9 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
     );
   }
 
+  // 법률 문서 생성 감지 (AI 초안 면책 문구 포함 시)
+  const isDocumentGeneration = content.includes('AI가 생성한 참고용 초안');
+
   // assistant 응답: 법률 콘텐츠 가독성 최적화
   return (
     <div className="group flex justify-start my-1.5 animate-fade-up">
@@ -101,6 +118,9 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
         ">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{sanitizeContent(content)}</ReactMarkdown>
         </div>
+        {isDocumentGeneration && (
+          <DocumentDownload content={content} />
+        )}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <CopyButton content={content} />
         </div>
