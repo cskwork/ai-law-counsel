@@ -32,12 +32,21 @@ describe('GET /api/citation', () => {
   });
 
   it('법령 인용 조회 시 200 응답을 반환해야 한다', async () => {
-    const responseJson = JSON.stringify({
+    // 1단계: search_law 결과 (법령명 → MST ID 해석)
+    const searchJson = JSON.stringify({
+      items: [{ lawId: '001234', lawNameKo: '주택임대차보호법' }],
+    });
+    // 2단계: get_law_detail 결과
+    const detailJson = JSON.stringify({
       lawNameKo: '주택임대차보호법',
       articles: [{ articleNumber: '3-2', articleTitle: '보증금의 회수', articleContent: '임차인이...' }],
     });
-    vi.mocked(callMcpTool).mockResolvedValue(mockCallToolResult(responseJson) as never);
-    vi.mocked(extractToolResultText).mockReturnValue(responseJson);
+    vi.mocked(callMcpTool)
+      .mockResolvedValueOnce(mockCallToolResult(searchJson) as never)
+      .mockResolvedValueOnce(mockCallToolResult(detailJson) as never);
+    vi.mocked(extractToolResultText)
+      .mockReturnValueOnce(searchJson)
+      .mockReturnValueOnce(detailJson);
 
     const { GET } = await importRoute();
     const request = createRequest({ type: 'statute', id: '주택임대차보호법', article: '3-2' });
@@ -50,16 +59,27 @@ describe('GET /api/citation', () => {
     expect(body.data.name).toBe('주택임대차보호법');
     expect(body.data.fullText).toContain('임차인이');
     expect(body.data.externalUrl).toContain('law.go.kr');
+    // 2단계 호출에서 실제 MST ID가 사용되었는지 검증
+    expect(vi.mocked(callMcpTool)).toHaveBeenCalledWith('get_law_detail', { lawId: '001234' });
   });
 
   it('판례 인용 조회 시 200 응답을 반환해야 한다', async () => {
-    const responseJson = JSON.stringify({
+    // 1단계: search_precedent 결과 (사건번호 → precedentId 해석)
+    const searchJson = JSON.stringify({
+      items: [{ precedentId: 'PREC_567', caseName: '손해배상 판결', caseNumber: '2023다12345' }],
+    });
+    // 2단계: get_precedent_detail 결과
+    const detailJson = JSON.stringify({
       caseName: '손해배상 판결',
       caseNumber: '2023다12345',
       fullText: '판결 전문...',
     });
-    vi.mocked(callMcpTool).mockResolvedValue(mockCallToolResult(responseJson) as never);
-    vi.mocked(extractToolResultText).mockReturnValue(responseJson);
+    vi.mocked(callMcpTool)
+      .mockResolvedValueOnce(mockCallToolResult(searchJson) as never)
+      .mockResolvedValueOnce(mockCallToolResult(detailJson) as never);
+    vi.mocked(extractToolResultText)
+      .mockReturnValueOnce(searchJson)
+      .mockReturnValueOnce(detailJson);
 
     const { GET } = await importRoute();
     const request = createRequest({ type: 'precedent', id: '2023다12345' });
@@ -69,6 +89,7 @@ describe('GET /api/citation', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data.type).toBe('precedent');
+    expect(vi.mocked(callMcpTool)).toHaveBeenCalledWith('get_precedent_detail', { precedentId: 'PREC_567' });
   });
 
   it('필수 파라미터 누락 시 400 응답을 반환해야 한다', async () => {
