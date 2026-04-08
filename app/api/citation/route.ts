@@ -1,19 +1,19 @@
-import { callMcpTool } from '@/lib/mcp/client';
-import { extractToolResultText } from '@/lib/mcp/tool-bridge';
+import { createLawApiClient } from '@/lib/law/client';
+import { searchLaw } from '@/lib/law/search-law';
+import { getLawDetail } from '@/lib/law/get-law-detail';
+import { searchPrecedent } from '@/lib/law/search-precedent';
+import { getPrecedentDetail } from '@/lib/law/get-precedent-detail';
 import { buildExternalUrl } from '@/lib/citation/builder';
 import type { CitationType } from '@/lib/citation/types';
+import type { LawArticle } from '@/lib/law/types';
 
-/** MCP 호출 타임아웃 (ms) — 검색 + 상세 2단계이므로 각 호출당 적용 */
-const MCP_TIMEOUT = 10_000;
-
-/** 타임아웃 부착 Promise */
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('타임아웃')), ms),
-    ),
-  ]);
+/** 조문번호 매칭 (다양한 형식 허용: "6의3", "6-3", "6조의3" 등) */
+function matchArticle(articles: readonly LawArticle[], target: string): LawArticle | undefined {
+  const normalized = target.replace(/조$/, '');
+  return articles.find((a) => {
+    const num = a.articleNumber.replace(/조$/, '');
+    return num === normalized;
+  });
 }
 
 export async function GET(request: Request) {
@@ -30,90 +30,65 @@ export async function GET(request: Request) {
   }
 
   try {
+    const client = createLawApiClient();
     let fullText = '';
     let name = id;
     let articleNumber = article;
 
     if (type === 'statute') {
-      // 1단계: 법령명으로 검색하여 실제 MST ID 해석
-      const searchResult = await withTimeout(
-        callMcpTool('search_law', { query: id }),
-        MCP_TIMEOUT,
-      );
-      const searchText = extractToolResultText(searchResult);
-      const searchParsed = JSON.parse(searchText) as Record<string, unknown>;
-      const items = Array.isArray(searchParsed.items) ? searchParsed.items : [];
-      const lawItem = items[0] as Record<string, unknown> | undefined;
+      // 1단계: 법령명으로 검색 → MST ID 해석
+      const searchResult = await searchLaw(client, { query: id, display: 3 });
+      const lawItem = searchResult.items[0];
 
-      if (!lawItem?.lawId) {
-        const externalUrl = buildExternalUrl(type, id, article);
+      if (!lawItem) {
         return Response.json({
           success: true,
           data: {
             type, name: id, articleNumber: article,
             fullText: '해당 법령을 찾을 수 없습니다.',
-            externalUrl,
+            externalUrl: buildExternalUrl(type, id, article),
             verified: false,
             fetchedAt: new Date().toISOString(),
           },
         });
       }
 
-      name = String(lawItem.lawNameKo ?? id);
+      name = lawItem.lawNameKo || id;
 
       // 2단계: 실제 MST ID로 상세 조회
-      const mcpResult = await withTimeout(
-        callMcpTool('get_law_detail', { lawId: String(lawItem.lawId) }),
-        MCP_TIMEOUT,
-      );
-      const resultText = extractToolResultText(mcpResult);
-      const parsed = JSON.parse(resultText) as Record<string, unknown>;
-      name = String(parsed.lawNameKo ?? name);
+      const detail = await getLawDetail(client, lawItem.lawId);
+      name = detail.lawNameKo || name;
 
       // 특정 조문 찾기
-      if (article && Array.isArray(parsed.articles)) {
-        const matched = parsed.articles.find(
-          (a: Record<string, unknown>) => String(a.articleNumber) === article,
-        );
+      if (article && detail.articles.length > 0) {
+        const matched = matchArticle(detail.articles, article);
         if (matched) {
-          fullText = `${matched.articleTitle}\n${matched.articleContent}`;
-          articleNumber = String(matched.articleNumber);
+          fullText = matched.articleTitle
+            ? `${matched.articleTitle}\n${matched.articleContent}`
+            : matched.articleContent;
+          articleNumber = matched.articleNumber;
         }
       }
 
-      if (!fullText && Array.isArray(parsed.articles)) {
-        fullText = parsed.articles
+      // 조문 미매칭 시 처음 5개 표시
+      if (!fullText && detail.articles.length > 0) {
+        fullText = detail.articles
           .slice(0, 5)
-          .map((a: Record<string, unknown>) => `${a.articleTitle}: ${a.articleContent}`)
+          .map((a) => a.articleTitle ? `${a.articleTitle}: ${a.articleContent}` : a.articleContent)
           .join('\n\n');
       }
     } else if (type === 'precedent') {
-      // 1단계: 사건번호로 검색하여 판례 ID 해석
-      const searchResult = await withTimeout(
-        callMcpTool('search_precedent', { query: id }),
-        MCP_TIMEOUT,
-      );
-      const searchText = extractToolResultText(searchResult);
-      const searchParsed = JSON.parse(searchText) as Record<string, unknown>;
-      const items = Array.isArray(searchParsed.items) ? searchParsed.items : [];
-      const precItem = items[0] as Record<string, unknown> | undefined;
+      // 1단계: 사건번호로 검색 → precedentId 해석
+      const searchResult = await searchPrecedent(client, { query: id, display: 3 });
+      const precItem = searchResult.items[0];
 
-      if (precItem?.precedentId) {
-        const mcpResult = await withTimeout(
-          callMcpTool('get_precedent_detail', { precedentId: String(precItem.precedentId) }),
-          MCP_TIMEOUT,
-        );
-        const resultText = extractToolResultText(mcpResult);
-        const parsed = JSON.parse(resultText) as Record<string, unknown>;
-        name = String(parsed.caseName ?? id);
-        fullText = String(parsed.fullText ?? parsed.summary ?? '');
-      } else {
-        name = String(precItem?.caseName ?? id);
+      if (precItem) {
+        const detail = await getPrecedentDetail(client, precItem.precedentId);
+        name = detail.caseName || id;
+        fullText = detail.fullText || detail.summary || '';
       }
-    } else {
-      // rule 타입은 현재 상세 조회 미지원
-      fullText = '';
     }
+    // rule 타입은 현재 상세 조회 미지원
 
     const externalUrl = buildExternalUrl(type, name, articleNumber);
 

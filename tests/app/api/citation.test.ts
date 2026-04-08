@@ -1,15 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { LawSearchResult, LawDetail, PrecedentSearchResult, PrecedentDetail } from '@/lib/law/types';
 
-vi.mock('@/lib/mcp/client', () => ({
-  callMcpTool: vi.fn(),
+vi.mock('@/lib/law/client', () => ({
+  createLawApiClient: vi.fn(() => ({})),
 }));
 
-vi.mock('@/lib/mcp/tool-bridge', () => ({
-  extractToolResultText: vi.fn(),
+vi.mock('@/lib/law/search-law', () => ({
+  searchLaw: vi.fn(),
 }));
 
-import { callMcpTool } from '@/lib/mcp/client';
-import { extractToolResultText } from '@/lib/mcp/tool-bridge';
+vi.mock('@/lib/law/get-law-detail', () => ({
+  getLawDetail: vi.fn(),
+}));
+
+vi.mock('@/lib/law/search-precedent', () => ({
+  searchPrecedent: vi.fn(),
+}));
+
+vi.mock('@/lib/law/get-precedent-detail', () => ({
+  getPrecedentDetail: vi.fn(),
+}));
+
+import { searchLaw } from '@/lib/law/search-law';
+import { getLawDetail } from '@/lib/law/get-law-detail';
+import { searchPrecedent } from '@/lib/law/search-precedent';
+import { getPrecedentDetail } from '@/lib/law/get-precedent-detail';
 
 const importRoute = () => import('@/app/api/citation/route');
 
@@ -21,32 +36,26 @@ function createRequest(params: Record<string, string>): Request {
   return new Request(url.toString());
 }
 
-/** MCP CallToolResult mock */
-function mockCallToolResult(text: string) {
-  return { content: [{ type: 'text', text }], isError: false };
-}
-
 describe('GET /api/citation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('법령 인용 조회 시 200 응답을 반환해야 한다', async () => {
-    // 1단계: search_law 결과 (법령명 → MST ID 해석)
-    const searchJson = JSON.stringify({
-      items: [{ lawId: '001234', lawNameKo: '주택임대차보호법' }],
-    });
-    // 2단계: get_law_detail 결과
-    const detailJson = JSON.stringify({
+    vi.mocked(searchLaw).mockResolvedValue({
+      totalCount: 1,
+      items: [{ lawId: '001234', lawNameKo: '주택임대차보호법', lawAbbreviation: '', lawType: '법률', department: '', promulgationDate: '', promulgationNumber: '', enforcementDate: '', amendmentType: '' }],
+    } satisfies LawSearchResult);
+
+    vi.mocked(getLawDetail).mockResolvedValue({
+      lawId: '001234',
       lawNameKo: '주택임대차보호법',
+      lawType: '법률',
+      department: '법무부',
+      promulgationDate: '',
+      enforcementDate: '',
       articles: [{ articleNumber: '3-2', articleTitle: '보증금의 회수', articleContent: '임차인이...' }],
-    });
-    vi.mocked(callMcpTool)
-      .mockResolvedValueOnce(mockCallToolResult(searchJson) as never)
-      .mockResolvedValueOnce(mockCallToolResult(detailJson) as never);
-    vi.mocked(extractToolResultText)
-      .mockReturnValueOnce(searchJson)
-      .mockReturnValueOnce(detailJson);
+    } satisfies LawDetail);
 
     const { GET } = await importRoute();
     const request = createRequest({ type: 'statute', id: '주택임대차보호법', article: '3-2' });
@@ -59,27 +68,29 @@ describe('GET /api/citation', () => {
     expect(body.data.name).toBe('주택임대차보호법');
     expect(body.data.fullText).toContain('임차인이');
     expect(body.data.externalUrl).toContain('law.go.kr');
-    // 2단계 호출에서 실제 MST ID가 사용되었는지 검증
-    expect(vi.mocked(callMcpTool)).toHaveBeenCalledWith('get_law_detail', { lawId: '001234' });
+    expect(vi.mocked(getLawDetail)).toHaveBeenCalledWith(expect.anything(), '001234');
   });
 
   it('판례 인용 조회 시 200 응답을 반환해야 한다', async () => {
-    // 1단계: search_precedent 결과 (사건번호 → precedentId 해석)
-    const searchJson = JSON.stringify({
-      items: [{ precedentId: 'PREC_567', caseName: '손해배상 판결', caseNumber: '2023다12345' }],
-    });
-    // 2단계: get_precedent_detail 결과
-    const detailJson = JSON.stringify({
+    vi.mocked(searchPrecedent).mockResolvedValue({
+      totalCount: 1,
+      items: [{ precedentId: 'PREC_567', caseName: '손해배상 판결', caseNumber: '2023다12345', judgmentDate: '', judgment: '', courtName: '', caseType: '', holding: '', summary: '요지...' }],
+    } satisfies PrecedentSearchResult);
+
+    vi.mocked(getPrecedentDetail).mockResolvedValue({
+      precedentId: 'PREC_567',
       caseName: '손해배상 판결',
       caseNumber: '2023다12345',
+      judgmentDate: '',
+      judgment: '',
+      courtName: '대법원',
+      caseType: '민사',
+      holding: '',
+      summary: '요지...',
+      referenceArticles: '',
+      referencePrecedents: '',
       fullText: '판결 전문...',
-    });
-    vi.mocked(callMcpTool)
-      .mockResolvedValueOnce(mockCallToolResult(searchJson) as never)
-      .mockResolvedValueOnce(mockCallToolResult(detailJson) as never);
-    vi.mocked(extractToolResultText)
-      .mockReturnValueOnce(searchJson)
-      .mockReturnValueOnce(detailJson);
+    } satisfies PrecedentDetail);
 
     const { GET } = await importRoute();
     const request = createRequest({ type: 'precedent', id: '2023다12345' });
@@ -89,7 +100,21 @@ describe('GET /api/citation', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data.type).toBe('precedent');
-    expect(vi.mocked(callMcpTool)).toHaveBeenCalledWith('get_precedent_detail', { precedentId: 'PREC_567' });
+    expect(body.data.fullText).toContain('판결 전문');
+    expect(vi.mocked(getPrecedentDetail)).toHaveBeenCalledWith(expect.anything(), 'PREC_567');
+  });
+
+  it('검색 결과 없을 때 미검증 응답을 반환해야 한다', async () => {
+    vi.mocked(searchLaw).mockResolvedValue({ totalCount: 0, items: [] });
+
+    const { GET } = await importRoute();
+    const request = createRequest({ type: 'statute', id: '존재하지않는법', article: '1' });
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.verified).toBe(false);
+    expect(body.data.fullText).toBe('해당 법령을 찾을 수 없습니다.');
   });
 
   it('필수 파라미터 누락 시 400 응답을 반환해야 한다', async () => {
@@ -102,8 +127,8 @@ describe('GET /api/citation', () => {
     expect(body.success).toBe(false);
   });
 
-  it('MCP 호출 실패 시 503 응답을 반환해야 한다', async () => {
-    vi.mocked(callMcpTool).mockRejectedValue(new Error('MCP connection failed'));
+  it('API 호출 실패 시 503 응답을 반환해야 한다', async () => {
+    vi.mocked(searchLaw).mockRejectedValue(new Error('API 요청 실패: 500'));
 
     const { GET } = await importRoute();
     const request = createRequest({ type: 'statute', id: '민법', article: '750' });
