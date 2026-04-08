@@ -2,6 +2,7 @@ import { buildExternalUrl } from '@/lib/citation/builder';
 import type { CitationType } from '@/lib/citation/types';
 import { createLawApiClient } from '@/lib/law/client';
 import { getLawDetail } from '@/lib/law/get-law-detail';
+import { getPublicLawArticle } from '@/lib/law/get-public-law-article';
 import { getPrecedentDetail } from '@/lib/law/get-precedent-detail';
 import { normalizeArticleNumber, toLawServiceArticleCode } from '@/lib/law/article-number';
 import { searchLaw } from '@/lib/law/search-law';
@@ -156,6 +157,28 @@ export async function GET(request: Request) {
     });
   } catch (err: unknown) {
     if (isDependencyFailure(err)) {
+      if (type === 'statute' && normalizedArticle) {
+        try {
+          const fallback = await getPublicLawArticle(id, normalizedArticle);
+
+          return Response.json({
+            success: true,
+            data: {
+              type,
+              name: fallback.name,
+              articleNumber: fallback.articleNumber,
+              fullText: fallback.fullText,
+              externalUrl: fallback.externalUrl,
+              verified: true,
+              fetchedAt: new Date().toISOString(),
+            },
+          });
+        } catch (fallbackError: unknown) {
+          const fallbackDetail = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+          console.error('[citation] 공개 페이지 fallback 실패:', fallbackDetail);
+        }
+      }
+
       return buildUnavailableResponse(type, id, normalizedArticle ?? article);
     }
 
