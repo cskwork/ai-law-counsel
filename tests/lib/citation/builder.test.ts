@@ -18,13 +18,19 @@ describe('인용 URL 빌더', () => {
     it('조문 번호가 있으면 한글주소 형식 딥링크를 생성해야 한다', () => {
       const url = buildStatuteUrl('민법', '750');
 
-      expect(url).toBe(`https://www.law.go.kr/법령/${encodeURIComponent('민법')}/제750조`);
+      expect(url).toBe(`https://www.law.go.kr/법령/${encodeURIComponent('민법')}/${encodeURIComponent('제750조')}`);
     });
 
     it('하이픈 포함 조문번호를 처리해야 한다', () => {
       const url = buildStatuteUrl('민법', '3-2');
 
-      expect(url).toBe(`https://www.law.go.kr/법령/${encodeURIComponent('민법')}/제3-2조`);
+      expect(url).toBe(`https://www.law.go.kr/법령/${encodeURIComponent('민법')}/${encodeURIComponent('제3조의2')}`);
+    });
+
+    it('제/조가 포함된 입력도 정규화해야 한다', () => {
+      const url = buildStatuteUrl('민법', '제8조');
+
+      expect(url).toBe(`https://www.law.go.kr/법령/${encodeURIComponent('민법')}/${encodeURIComponent('제8조')}`);
     });
   });
 
@@ -52,7 +58,7 @@ describe('인용 URL 빌더', () => {
     it('법령 타입에 조문번호를 포함할 수 있어야 한다', () => {
       const url = buildExternalUrl('statute', '민법', '750');
 
-      expect(url).toBe(`https://www.law.go.kr/법령/${encodeURIComponent('민법')}/제750조`);
+      expect(url).toBe(`https://www.law.go.kr/법령/${encodeURIComponent('민법')}/${encodeURIComponent('제750조')}`);
     });
 
     it('판례 타입에 대해 검색 URL을 생성해야 한다', () => {

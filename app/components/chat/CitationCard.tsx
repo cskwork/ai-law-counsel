@@ -2,12 +2,27 @@
 
 import { useState, useCallback } from 'react';
 import type { CitationResponse } from '@/lib/citation/types';
+import { formatArticleLabel } from '@/lib/law/article-number';
 
 interface CitationCardProps {
   /** cite: 프로토콜 URL (예: cite:statute/민법/750) */
   citeUrl: string;
   /** 인용 표시 텍스트 */
   children: React.ReactNode;
+}
+
+async function parseCitationResponse(response: Response): Promise<CitationResponse> {
+  const text = await response.text();
+
+  if (!text.trim()) {
+    return { success: false, error: '인용 응답이 비어 있습니다.' };
+  }
+
+  try {
+    return JSON.parse(text) as CitationResponse;
+  } catch {
+    throw new Error('INVALID_CITATION_RESPONSE');
+  }
 }
 
 /** cite: URL에서 타입, ID, 조문번호를 파싱 */
@@ -28,6 +43,7 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CitationResponse['data'] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const articleLabel = data?.articleNumber ? formatArticleLabel(data.articleNumber) : undefined;
 
   const handleClick = useCallback(async () => {
     if (expanded) {
@@ -54,15 +70,19 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
       if (parsed.article) params.set('article', parsed.article);
 
       const response = await fetch(`/api/citation?${params}`);
-      const body: CitationResponse = await response.json();
+      const body = await parseCitationResponse(response);
 
-      if (body.success && body.data) {
+      if (response.ok && body.success && body.data) {
         setData(body.data);
       } else {
         setError(body.error ?? '인용 정보를 가져올 수 없습니다.');
       }
-    } catch {
-      setError('서버 연결에 실패했습니다.');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === 'INVALID_CITATION_RESPONSE') {
+        setError('인용 서비스 응답 형식이 올바르지 않습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        setError('서버 연결에 실패했습니다.');
+      }
     } finally {
       setLoading(false);
     }
@@ -98,7 +118,7 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
             <span className="block space-y-2">
               <span className="block font-display font-semibold text-ink-primary">
                 {data.name}
-                {data.articleNumber && ` 제${data.articleNumber}조`}
+                {articleLabel && ` ${articleLabel}`}
               </span>
               <span className="block whitespace-pre-wrap text-ink-secondary leading-relaxed">
                 {data.fullText}

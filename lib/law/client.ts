@@ -13,6 +13,11 @@ export type TargetType = 'law' | 'prec' | 'admrul';
 /** 상세 조회 대상 타입 */
 export type DetailTargetType = 'law' | 'prec';
 
+export interface LawDetailUrlOptions {
+  readonly lawIdentifierType?: 'ID' | 'MST';
+  readonly articleJo?: string;
+}
+
 const BASE_URL = 'https://www.law.go.kr/DRF';
 const SEARCH_ENDPOINT = `${BASE_URL}/lawSearch.do`;
 const DETAIL_ENDPOINT = `${BASE_URL}/lawService.do`;
@@ -52,15 +57,18 @@ export class LawApiClient {
     return url.toString();
   }
 
-  /** 상세 조회 URL 생성 (법령은 MST, 판례는 ID 파라미터 사용) */
-  buildDetailUrl(target: DetailTargetType, id: string): string {
+  /** 상세 조회 URL 생성 */
+  buildDetailUrl(target: DetailTargetType, id: string, options: LawDetailUrlOptions = {}): string {
     const url = new URL(DETAIL_ENDPOINT);
     url.searchParams.set('OC', this.apiKey);
     url.searchParams.set('target', target);
     url.searchParams.set('type', 'XML');
 
     if (target === 'law') {
-      url.searchParams.set('MST', id);
+      url.searchParams.set(options.lawIdentifierType ?? 'ID', id);
+      if (options.articleJo) {
+        url.searchParams.set('JO', options.articleJo);
+      }
     } else {
       url.searchParams.set('ID', id);
     }
@@ -75,23 +83,34 @@ export class LawApiClient {
 
   /** URL에서 XML을 가져와 파싱 (타임아웃 포함) */
   async fetchAndParse(url: string): Promise<Record<string, unknown>> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    let lastError: unknown;
 
-    try {
-      const response = await fetch(url, { signal: controller.signal });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-      if (!response.ok) {
-        throw new Error(
-          `API 요청 실패: ${response.status} ${response.statusText}`
-        );
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            Accept: 'application/xml, text/xml;q=0.9, */*;q=0.8',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`API 요청 실패: ${response.status} ${response.statusText}`);
+        }
+
+        const xml = await response.text();
+        return this.parseXml(xml);
+      } catch (error) {
+        lastError = error;
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      const xml = await response.text();
-      return this.parseXml(xml);
-    } finally {
-      clearTimeout(timeoutId);
     }
+
+    throw lastError;
   }
 }
 

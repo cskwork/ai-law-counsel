@@ -19,6 +19,10 @@
 - **feat**: 인용 URL 빌더 (법령/판례/행정규칙별 law.go.kr URL 생성)
 - **feat**: 시스템 프롬프트에 인용 형식 지시문 추가
 - **refactor**: 오케스트레이터 URL 생성을 citation builder로 통합
+- **fix**: Citation API를 `ID` + `JO` 공식 문법에 맞게 조정하고 `3의2`, `제3조의2` 같은 조문 포맷을 정규화
+- **fix**: `/api/citation`을 서울 리전(`icn1`)으로 고정하고 외부 법령 API 실패 시 검증 대기 fallback 응답으로 다운그레이드
+- **fix**: 법령 검색 결과의 공식 `법령상세링크`를 우선 사용하도록 변경
+- **fix**: CitationCard가 HTML 에러 페이지를 JSON으로 파싱하다 깨지는 문제를 방어 처리
 
 ### US3: 법률 문서 템플릿 (P2)
 - **feat**: 5종 법률 문서 템플릿 타입 정의 (임대차/근로/내용증명/위임장/NDA)

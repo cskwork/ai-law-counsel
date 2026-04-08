@@ -22,7 +22,8 @@ describe('parseLawDetailXml', () => {
               조문내용: '이 법은 민사에 관한 기본법이다.',
             },
             {
-              조문번호: '제2조',
+              조문번호: 2,
+              조문가지번호: 0,
               조문제목: '신의성실',
               조문내용: '권리의 행사와 의무의 이행은 신의에 좇아 성실히 하여야 한다.',
             },
@@ -36,7 +37,7 @@ describe('parseLawDetailXml', () => {
     expect(result.lawId).toBe('001');
     expect(result.lawNameKo).toBe('민법');
     expect(result.articles).toHaveLength(2);
-    expect(result.articles[0].articleNumber).toBe('제1조');
+    expect(result.articles[0].articleNumber).toBe('1');
     expect(result.articles[0].articleTitle).toBe('목적');
     expect(result.articles[1].articleContent).toContain('신의에 좇아');
   });
@@ -65,7 +66,34 @@ describe('parseLawDetailXml', () => {
     const result = parseLawDetailXml(parsed);
 
     expect(result.articles).toHaveLength(1);
-    expect(result.articles[0].articleNumber).toBe('제1조');
+    expect(result.articles[0].articleNumber).toBe('1');
+  });
+
+  it('조문가지번호가 있으면 의 조문을 정규화해야 한다', () => {
+    const parsed = {
+      법령: {
+        기본정보: {
+          법령ID: '001',
+          법령명_한글: '민법',
+          법령구분: '법률',
+          소관부처: '법무부',
+          공포일자: '19580222',
+          시행일자: '19600101',
+        },
+        조문: {
+          조문단위: {
+            조문번호: 3,
+            조문가지번호: 2,
+            조문제목: '특례',
+            조문내용: '특례 조항이다.',
+          },
+        },
+      },
+    };
+
+    const result = parseLawDetailXml(parsed);
+
+    expect(result.articles[0].articleNumber).toBe('3-2');
   });
 });
 
@@ -94,7 +122,10 @@ describe('getLawDetail', () => {
 
     const result = await getLawDetail(mockClient, '001');
 
-    expect(mockClient.buildDetailUrl).toHaveBeenCalledWith('law', '001');
+    expect(mockClient.buildDetailUrl).toHaveBeenCalledWith('law', '001', {
+      articleJo: undefined,
+      lawIdentifierType: 'ID',
+    });
     expect(result.lawId).toBe('001');
     expect(result.lawNameKo).toBe('민법');
   });
