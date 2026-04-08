@@ -7,7 +7,7 @@ import { FileUpload, type UploadResult } from './FileUpload';
 import type { SSEEvent } from '@/lib/utils/sse';
 import type { Message } from '@/app/types/conversation';
 import type { DocumentContext } from '@/lib/document/context';
-import { MAX_CONTEXT_MESSAGES } from '@/lib/constants';
+import { buildContextWindow } from '@/lib/chat/context-window';
 
 const WELCOME_EVENT: ChatEvent = {
   id: 'welcome',
@@ -102,7 +102,7 @@ export function ChatContainer({ initialEvents, initialMessages, onSave, onStream
 
     try {
       const requestBody: Record<string, unknown> = {
-        messages: updatedHistory.slice(-MAX_CONTEXT_MESSAGES).map((m) => ({ role: m.role, content: m.content })),
+        messages: buildContextWindow(updatedHistory),
       };
       if (currentDoc) {
         requestBody.documentContext = currentDoc;
