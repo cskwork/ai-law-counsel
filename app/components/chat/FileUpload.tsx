@@ -43,7 +43,7 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
     // 클라이언트 측 사전 검증
     const ext = getExtension(file.name);
     if (!(SUPPORTED_FILE_TYPES as readonly string[]).includes(ext)) {
-      setError(`지원하지 않는 파일 형식입니다. ${SUPPORTED_FILE_TYPES.join(', ').toUpperCase()} 파일만 가능���니다.`);
+      setError(`지원하지 않는 파일 형식입니다. ${SUPPORTED_FILE_TYPES.join(', ').toUpperCase()} 파일만 가능합니다.`);
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -111,10 +111,10 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
         onDragLeave={handleDragLeave}
         onClick={() => !disabled && !uploading && inputRef.current?.click()}
         className={`
-          flex items-center justify-center rounded-xl border-2 border-dashed px-4 py-3 text-sm transition-colors cursor-pointer
+          flex items-center justify-center rounded-lg border-2 border-dashed px-4 py-3 text-sm transition-colors cursor-pointer
           ${dragOver
-            ? 'border-blue-400 bg-blue-50 text-blue-600'
-            : 'border-zinc-200 bg-zinc-50/50 text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50'}
+            ? 'border-accent-gold bg-accent-gold-light text-accent-gold-dim'
+            : 'border-border-default bg-surface-sunken text-ink-tertiary hover:border-border-strong hover:bg-surface-elevated'}
           ${(disabled || uploading) ? 'opacity-50 cursor-not-allowed' : ''}
         `}
       >
@@ -127,8 +127,8 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
           className="hidden"
         />
         {uploading ? (
-          <span className="flex items-center gap-2">
-            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+          <span className="flex items-center gap-2 text-ink-secondary">
+            <svg className="h-4 w-4 animate-spin text-accent-gold" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
@@ -136,12 +136,12 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
           </span>
         ) : (
           <span>
-            <span className="font-medium text-zinc-700">PDF, DOCX, TXT</span> 파일을 여기에 끌어놓거나 클릭하세요
+            <span className="font-medium text-ink-secondary tracking-wide">PDF, DOCX, TXT</span> 파일을 여기에 끌어놓거나 클릭하세요
           </span>
         )}
       </div>
       {error && (
-        <p className="text-xs text-red-500 px-1">{error}</p>
+        <p className="text-xs text-status-error px-1">{error}</p>
       )}
     </div>
   );

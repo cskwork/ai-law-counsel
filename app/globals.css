@@ -2,20 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* --- Typography --- */
+  --font-display: var(--font-noto-serif-kr), Georgia, serif;
+  --font-body: var(--font-noto-sans-kr), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* --- Surface / Background --- */
+  --surface-ground: #FAF8F5;
+  --surface-primary: #FFFFFF;
+  --surface-elevated: #F5F2ED;
+  --surface-sunken: #EFECE6;
+
+  /* --- Ink / Text --- */
+  --ink-primary: #1A1714;
+  --ink-secondary: #5C564D;
+  --ink-tertiary: #8A837A;
+  --ink-inverse: #FAF8F5;
+
+  /* --- Brand / Authority --- */
+  --authority-deep: #1B2A4A;
+  --authority-mid: #2D4470;
+  --authority-light: #E8ECF4;
+
+  /* --- Accent / Legal Gold --- */
+  --accent-gold: #B8943F;
+  --accent-gold-light: #F4EDD8;
+  --accent-gold-dim: #9A7B30;
+
+  /* --- Status --- */
+  --status-success: #3D7A5F;
+  --status-success-bg: #E7F2EC;
+  --status-warning: #B8860B;
+  --status-warning-bg: #FDF6E3;
+  --status-error: #A63D40;
+  --status-error-bg: #FBEAEA;
+  --status-info: #4A6FA5;
+  --status-info-bg: #EDF2F9;
+
+  /* --- Citation Types --- */
+  --cite-law: #2D4470;
+  --cite-law-bg: #E8ECF4;
+  --cite-precedent: #6B4C8A;
+  --cite-precedent-bg: #F0EBF5;
+  --cite-admin: #3D7A5F;
+  --cite-admin-bg: #E7F2EC;
+
+  /* --- Border --- */
+  --border-default: #E2DDD5;
+  --border-subtle: #EEEBE5;
+  --border-strong: #C5BFB5;
+
+  /* --- Shadows (warm-toned) --- */
+  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.06);
+  --shadow-md: 0 2px 8px rgba(26, 23, 20, 0.08);
+  --shadow-lg: 0 4px 16px rgba(26, 23, 20, 0.10);
+
+  /* --- Transitions --- */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+}
+
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
   }
 
   ::selection {
-    background-color: rgb(59 130 246 / 0.2);
+    background-color: var(--authority-light);
   }
 }
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgb(161 161 170) transparent;
+    scrollbar-color: var(--border-strong) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -28,20 +91,26 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(161 161 170);
+    background-color: var(--border-strong);
     border-radius: 2px;
   }
 }
 
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* --- Animations --- */
+
+@keyframes settle {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 @keyframes shimmer {
@@ -49,24 +118,25 @@
   100% { background-position: 200% 0; }
 }
 
-@keyframes pulse-soft {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+.animate-settle {
+  animation: settle var(--duration-slow) var(--ease-out-expo) both;
 }
 
-.animate-fade-up {
-  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+.animate-cursor {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+.animate-breathe {
+  animation: breathe 1.6s ease-in-out infinite;
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, rgb(228 228 231) 25%, rgb(244 244 245) 50%, rgb(228 228 231) 75%);
+  background: linear-gradient(90deg, var(--surface-sunken) 25%, var(--surface-elevated) 50%, var(--surface-sunken) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-.animate-pulse-soft {
-  animation: pulse-soft 1.4s ease-in-out infinite;
-}
+/* --- Prose overrides --- */
 
 .prose blockquote p:first-child::before {
   content: none;
