@@ -1,4 +1,4 @@
-import ReactMarkdown, { type Components } from 'react-markdown';
+import ReactMarkdown, { type Components, defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CopyButton } from './CopyButton';
 import { CitationCard } from './CitationCard';
@@ -8,6 +8,12 @@ import { sanitizeContent } from '@/lib/utils/sanitize-content';
 interface MessageBubbleProps {
   role: 'user' | 'assistant' | 'system';
   content: string;
+}
+
+/** cite: 프로토콜을 허용하는 URL 변환기 (기본값은 http/https/mailto/tel만 허용) */
+function citeAwareUrlTransform(url: string): string {
+  if (url.startsWith('cite:')) return url;
+  return defaultUrlTransform(url);
 }
 
 // 법률 콘텐츠 가독성 최적화 커스텀 렌더러
@@ -118,7 +124,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           prose-td:px-3 prose-td:py-2 prose-td:text-ink-secondary prose-td:border-border-default
           prose-hr:my-4 prose-hr:border-border-default
         ">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{sanitizeContent(content)}</ReactMarkdown>
+          <ReactMarkdown urlTransform={citeAwareUrlTransform} remarkPlugins={[remarkGfm]} components={markdownComponents}>{sanitizeContent(content)}</ReactMarkdown>
         </div>
         {isDocumentGeneration && (
           <DocumentDownload content={content} />
