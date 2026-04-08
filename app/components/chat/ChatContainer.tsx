@@ -255,21 +255,29 @@ export function ChatContainer({ initialEvents, initialMessages, onSave, onStream
   const hasMessages = conversationHistory.length > 0;
 
   return (
-    <div className="flex h-full flex-col bg-zinc-50">
+    <div className="flex h-full flex-col bg-surface-ground">
       {!hasMessages ? (
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-          <p className="mb-6 text-sm text-zinc-500">
+          {/* 천칭 아이콘 */}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-10 w-10 text-accent-gold mb-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0 0 12 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 0 1-2.031.352 5.988 5.988 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971Zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 0 1-2.031.352 5.989 5.989 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971Z" />
+          </svg>
+          <h2 className="font-display text-xl font-semibold text-ink-primary mb-2">법률 상담</h2>
+          <p className="mb-8 text-sm text-ink-secondary">
             자주 묻는 법률 질문을 선택하거나, 직접 질문을 입력하세요.
           </p>
-          <div className="grid gap-2 sm:grid-cols-2 max-w-2xl lg:max-w-4xl xl:max-w-5xl w-full">
+          <div className="w-full max-w-lg">
             {SUGGESTED_QUESTIONS.map((question) => (
               <button
                 key={question}
                 onClick={() => handleSend(question)}
                 disabled={isStreaming}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
+                className="group flex w-full items-center gap-3 border-b border-border-subtle px-3 py-3 text-left text-sm text-ink-secondary transition-colors hover:text-ink-primary hover:bg-surface-elevated disabled:opacity-50"
               >
-                {question}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 shrink-0 text-accent-gold opacity-0 group-hover:opacity-100 transition-opacity">
+                  <path fillRule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                </svg>
+                <span>{question}</span>
               </button>
             ))}
           </div>
@@ -277,18 +285,18 @@ export function ChatContainer({ initialEvents, initialMessages, onSave, onStream
       ) : (
         <MessageList events={events} isStreaming={isStreaming} />
       )}
-      <div className="border-t border-zinc-200/60 bg-white px-4 pt-2">
+      <div className="border-t border-border-default bg-surface-primary px-4 pt-2">
         <FileUpload onUploadComplete={handleUploadComplete} disabled={isStreaming} />
         {pendingDocument && (
-          <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-xs text-blue-700">
+          <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-accent-gold-light px-3 py-1.5 text-xs text-accent-gold-dim">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5 shrink-0">
               <path d="M3.5 2A1.5 1.5 0 002 3.5v9A1.5 1.5 0 003.5 14h9a1.5 1.5 0 001.5-1.5v-7A1.5 1.5 0 0012.5 5H10V3.5A1.5 1.5 0 008.5 2h-5z" />
             </svg>
             <span className="truncate font-medium">{pendingDocument.fileName}</span>
-            <span className="text-blue-500">({pendingDocument.extractedTextLength.toLocaleString()}자)</span>
+            <span className="text-accent-gold">({pendingDocument.extractedTextLength.toLocaleString()}자)</span>
             <button
               onClick={() => setPendingDocument(null)}
-              className="ml-auto text-blue-400 hover:text-blue-600"
+              className="ml-auto text-accent-gold hover:text-accent-gold-dim"
               title="문서 제거"
             >
               x

@@ -15,29 +15,25 @@ interface ToolCallIndicatorProps {
   summary?: string;
 }
 
-// 도구 호출 상태 표시 (호출 중 shimmer + 완료 시 체크)
+// 도구 호출 상태 표시 (마진 노트 스타일)
 export function ToolCallIndicator({ toolName, status, summary }: ToolCallIndicatorProps) {
   const label = TOOL_LABELS[toolName] ?? toolName;
 
   return (
-    <div className="flex items-center gap-2 my-1 ml-4 animate-fade-up">
-      <span className={`inline-flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-semibold ${
-        status === 'calling'
-          ? 'bg-blue-50 text-blue-500'
-          : 'bg-emerald-50 text-emerald-600'
-      }`}>
-        {status === 'calling' ? (
-          <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse-soft" />
-        ) : (
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-          </svg>
-        )}
+    <div className="flex items-center gap-2 my-1 ml-4 animate-settle">
+      {status === 'calling' ? (
+        <span className="h-2 w-2 rounded-full bg-accent-gold animate-breathe" />
+      ) : (
+        <svg className="h-3.5 w-3.5 text-status-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      )}
+      <span className={`text-xs tracking-wide ${status === 'calling' ? 'text-ink-tertiary' : 'text-ink-secondary'}`}>
+        {label}
       </span>
-      <span className="text-xs text-zinc-500 tracking-wide">{label}</span>
       {status === 'calling' && <LoadingDots />}
       {status === 'done' && summary && (
-        <span className="text-xs text-zinc-400">{summary}</span>
+        <span className="text-xs text-ink-tertiary">{summary}</span>
       )}
     </div>
   );

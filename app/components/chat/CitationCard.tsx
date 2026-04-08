@@ -72,16 +72,16 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
     <span className="inline">
       <button
         onClick={handleClick}
-        className="inline text-blue-600 hover:text-blue-800 underline decoration-dotted underline-offset-2 cursor-pointer font-medium"
+        className="inline text-authority-mid hover:text-authority-deep underline decoration-dotted decoration-accent-gold underline-offset-2 cursor-pointer font-medium transition-colors"
         title="클릭하여 조문 전문 보기"
       >
         {children}
       </button>
 
       {expanded && (
-        <span className="block my-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm shadow-sm">
+        <span className="block my-2 border-l-[3px] border-accent-gold bg-surface-elevated p-4 text-sm">
           {loading && (
-            <span className="flex items-center gap-2 text-zinc-500">
+            <span className="flex items-center gap-2 text-ink-tertiary">
               <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -91,16 +91,16 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
           )}
 
           {error && (
-            <span className="text-red-500">{error}</span>
+            <span className="text-status-error">{error}</span>
           )}
 
           {data && !loading && (
             <span className="block space-y-2">
-              <span className="block font-semibold text-zinc-800">
+              <span className="block font-display font-semibold text-ink-primary">
                 {data.name}
                 {data.articleNumber && ` 제${data.articleNumber}조`}
               </span>
-              <span className="block whitespace-pre-wrap text-zinc-600 leading-relaxed">
+              <span className="block whitespace-pre-wrap text-ink-secondary leading-relaxed">
                 {data.fullText}
               </span>
               <span className="flex items-center gap-3 pt-1">
@@ -108,14 +108,22 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
                   href={data.externalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-500 hover:text-blue-700 underline"
+                  className="inline-flex items-center gap-1 rounded-md border border-authority-deep px-2 py-1 text-xs text-authority-deep hover:bg-authority-deep hover:text-ink-inverse transition-colors"
                 >
                   law.go.kr에서 보기
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5">
+                    <path d="M3.5 1.75a.75.75 0 0 0 0 1.5h3.69L1.22 9.22a.75.75 0 1 0 1.06 1.06l5.97-5.97V8a.75.75 0 0 0 1.5 0V2.5a.75.75 0 0 0-.75-.75h-5.5Z" />
+                  </svg>
                 </a>
                 {data.verified ? (
-                  <span className="text-xs text-green-600">검증됨</span>
+                  <span className="flex items-center gap-1 text-xs text-status-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 text-accent-gold">
+                      <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clipRule="evenodd" />
+                    </svg>
+                    검증됨
+                  </span>
                 ) : (
-                  <span className="text-xs text-amber-600">검증 대기 중</span>
+                  <span className="text-xs text-status-warning">검증 대기 중</span>
                 )}
               </span>
             </span>
