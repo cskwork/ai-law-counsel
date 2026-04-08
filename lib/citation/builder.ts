@@ -2,23 +2,23 @@ import type { CitationType } from './types';
 
 const LAW_GO_KR_BASE = 'https://www.law.go.kr';
 
-/** 법령 페이지 URL 생성 */
+/** 법령 페이지 URL 생성 (한글주소 형식) */
 export function buildStatuteUrl(lawName: string, articleNumber?: string): string {
-  const base = `${LAW_GO_KR_BASE}/법령/${lawName}`;
+  const base = `${LAW_GO_KR_BASE}/법령/${encodeURIComponent(lawName)}`;
   if (articleNumber) {
-    return `${base}/(${articleNumber}조)`;
+    return `${base}/제${articleNumber}조`;
   }
   return base;
 }
 
 /** 판례 검색 URL 생성 */
 export function buildPrecedentUrl(caseNumber: string): string {
-  return `${LAW_GO_KR_BASE}/판례/(${caseNumber})`;
+  return `${LAW_GO_KR_BASE}/precSc.do?query=${encodeURIComponent(caseNumber)}`;
 }
 
 /** 행정규칙 URL 생성 */
 function buildRuleUrl(ruleName: string): string {
-  return `${LAW_GO_KR_BASE}/행정규칙/${ruleName}`;
+  return `${LAW_GO_KR_BASE}/행정규칙/${encodeURIComponent(ruleName)}`;
 }
 
 /** 인용 타입별 외부 URL 통합 생성 */
