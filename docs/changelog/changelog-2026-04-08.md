@@ -23,6 +23,7 @@
 - **fix**: `/api/citation`을 서울 리전(`icn1`)으로 고정하고 외부 법령 API 실패 시 검증 대기 fallback 응답으로 다운그레이드
 - **fix**: 법령 검색 결과의 공식 `법령상세링크`를 우선 사용하도록 변경
 - **fix**: CitationCard가 HTML 에러 페이지를 JSON으로 파싱하다 깨지는 문제를 방어 처리
+- **fix**: DRF 실패 시 law.go.kr 공개 본문 페이지(`lsInfoR.do`)에서 조문 전문을 파싱하는 fallback 추가
 
 ### US3: 법률 문서 템플릿 (P2)
 - **feat**: 5종 법률 문서 템플릿 타입 정의 (임대차/근로/내용증명/위임장/NDA)

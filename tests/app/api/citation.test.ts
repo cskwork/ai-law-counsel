@@ -13,6 +13,10 @@ vi.mock('@/lib/law/get-law-detail', () => ({
   getLawDetail: vi.fn(),
 }));
 
+vi.mock('@/lib/law/get-public-law-article', () => ({
+  getPublicLawArticle: vi.fn(),
+}));
+
 vi.mock('@/lib/law/search-precedent', () => ({
   searchPrecedent: vi.fn(),
 }));
@@ -23,6 +27,7 @@ vi.mock('@/lib/law/get-precedent-detail', () => ({
 
 import { searchLaw } from '@/lib/law/search-law';
 import { getLawDetail } from '@/lib/law/get-law-detail';
+import { getPublicLawArticle } from '@/lib/law/get-public-law-article';
 import { searchPrecedent } from '@/lib/law/search-precedent';
 import { getPrecedentDetail } from '@/lib/law/get-precedent-detail';
 
@@ -159,6 +164,7 @@ describe('GET /api/citation', () => {
 
   it('외부 API 호출 실패 시 검증 대기 응답을 반환해야 한다', async () => {
     vi.mocked(searchLaw).mockRejectedValue(new Error('fetch failed'));
+    vi.mocked(getPublicLawArticle).mockRejectedValue(new Error('public fallback failed'));
 
     const { GET } = await importRoute();
     const request = createRequest({ type: 'statute', id: '민법', article: '750' });
@@ -169,5 +175,26 @@ describe('GET /api/citation', () => {
     expect(body.success).toBe(true);
     expect(body.data.verified).toBe(false);
     expect(body.data.fullText).toContain('원문을 확인');
+  });
+
+  it('DRF 실패 시 공개 페이지 fallback으로 조문 전문을 반환해야 한다', async () => {
+    vi.mocked(searchLaw).mockRejectedValue(new Error('fetch failed'));
+    vi.mocked(getPublicLawArticle).mockResolvedValue({
+      name: '민법',
+      articleNumber: '750',
+      fullText: '불법행위의 내용\n고의 또는 과실로 인한 위법행위로 타인에게 손해를 가한 자는 그 손해를 배상할 책임이 있다.',
+      externalUrl: 'https://www.law.go.kr/법령/민법/제750조',
+    });
+
+    const { GET } = await importRoute();
+    const request = createRequest({ type: 'statute', id: '민법', article: '750' });
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.verified).toBe(true);
+    expect(body.data.fullText).toContain('불법행위의 내용');
+    expect(vi.mocked(getPublicLawArticle)).toHaveBeenCalledWith('민법', '750');
   });
 });
