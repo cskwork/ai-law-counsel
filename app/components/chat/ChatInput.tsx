@@ -47,7 +47,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           disabled={disabled}
           placeholder="법률 관련 질문을 입력하세요..."
           rows={1}
-          className="flex-1 resize-none rounded-lg border border-border-default bg-surface-sunken px-4 py-3 text-sm text-ink-primary placeholder:text-ink-tertiary focus:border-authority-deep focus:border-2 focus:bg-surface-primary focus:outline-none disabled:opacity-50 transition-all duration-200"
+          className="flex-1 resize-none rounded-lg border border-border-default bg-surface-sunken px-4 py-3 text-base text-ink-primary placeholder:text-ink-tertiary focus:border-authority-deep focus:border-2 focus:bg-surface-primary focus:outline-none disabled:opacity-50 transition-all duration-200"
         />
         <button
           onClick={handleSubmit}
