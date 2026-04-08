@@ -44,7 +44,7 @@ describe('GET /api/citation', () => {
   it('법령 인용 조회 시 200 응답을 반환해야 한다', async () => {
     vi.mocked(searchLaw).mockResolvedValue({
       totalCount: 1,
-      items: [{ lawId: '001234', lawNameKo: '주택임대차보호법', lawAbbreviation: '', lawType: '법률', department: '', promulgationDate: '', promulgationNumber: '', enforcementDate: '', amendmentType: '' }],
+      items: [{ lawId: '001234', lawNameKo: '주택임대차보호법', lawAbbreviation: '', lawType: '법률', department: '', promulgationDate: '', promulgationNumber: '', enforcementDate: '', amendmentType: '', detailLink: 'https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291' }],
     } satisfies LawSearchResult);
 
     vi.mocked(getLawDetail).mockResolvedValue({
@@ -67,8 +67,11 @@ describe('GET /api/citation', () => {
     expect(body.data.type).toBe('statute');
     expect(body.data.name).toBe('주택임대차보호법');
     expect(body.data.fullText).toContain('임차인이');
-    expect(body.data.externalUrl).toContain('law.go.kr');
-    expect(vi.mocked(getLawDetail)).toHaveBeenCalledWith(expect.anything(), '001234');
+    expect(body.data.externalUrl).toContain('lsiSeq=276291');
+    expect(vi.mocked(getLawDetail)).toHaveBeenCalledWith(expect.anything(), '001234', {
+      articleJo: '000302',
+      lawIdentifierType: 'ID',
+    });
   });
 
   it('판례 인용 조회 시 200 응답을 반환해야 한다', async () => {
@@ -117,6 +120,33 @@ describe('GET /api/citation', () => {
     expect(body.data.fullText).toBe('해당 법령을 찾을 수 없습니다.');
   });
 
+  it('의 조문 번호도 정상 매칭해야 한다', async () => {
+    vi.mocked(searchLaw).mockResolvedValue({
+      totalCount: 1,
+      items: [{ lawId: '001234', lawNameKo: '주택임대차보호법', lawAbbreviation: '', lawType: '법률', department: '', promulgationDate: '', promulgationNumber: '', enforcementDate: '', amendmentType: '', detailLink: 'https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291' }],
+    } satisfies LawSearchResult);
+
+    vi.mocked(getLawDetail).mockResolvedValue({
+      lawId: '001234',
+      lawNameKo: '주택임대차보호법',
+      lawType: '법률',
+      department: '법무부',
+      promulgationDate: '',
+      enforcementDate: '',
+      articles: [{ articleNumber: '3-2', articleTitle: '보증금의 회수', articleContent: '임차인이...' }],
+    } satisfies LawDetail);
+
+    const { GET } = await importRoute();
+    const request = createRequest({ type: 'statute', id: '주택임대차보호법', article: '3의2' });
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.articleNumber).toBe('3-2');
+    expect(body.data.fullText).toContain('임차인이');
+  });
+
   it('필수 파라미터 누락 시 400 응답을 반환해야 한다', async () => {
     const { GET } = await importRoute();
     const request = createRequest({ type: 'statute' }); // id 누락
@@ -127,16 +157,17 @@ describe('GET /api/citation', () => {
     expect(body.success).toBe(false);
   });
 
-  it('API 호출 실패 시 503 응답을 반환해야 한다', async () => {
-    vi.mocked(searchLaw).mockRejectedValue(new Error('API 요청 실패: 500'));
+  it('외부 API 호출 실패 시 검증 대기 응답을 반환해야 한다', async () => {
+    vi.mocked(searchLaw).mockRejectedValue(new Error('fetch failed'));
 
     const { GET } = await importRoute();
     const request = createRequest({ type: 'statute', id: '민법', article: '750' });
     const response = await GET(request);
     const body = await response.json();
 
-    expect(response.status).toBe(503);
-    expect(body.success).toBe(false);
-    expect(body.error).toContain('국가법령정보센터');
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.verified).toBe(false);
+    expect(body.data.fullText).toContain('원문을 확인');
   });
 });

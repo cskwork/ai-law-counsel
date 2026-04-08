@@ -18,6 +18,7 @@ describe('parseLawSearchXml', () => {
             공포번호: '471',
             시행일자: '19600101',
             제개정구분명: '제정',
+            법령상세링크: 'https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=1',
           },
           {
             법령ID: '002',
@@ -29,6 +30,7 @@ describe('parseLawSearchXml', () => {
             공포번호: '293',
             시행일자: '19531018',
             제개정구분명: '제정',
+            법령상세링크: 'https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=2',
           },
         ],
       },
@@ -40,6 +42,7 @@ describe('parseLawSearchXml', () => {
     expect(result.items).toHaveLength(2);
     expect(result.items[0].lawId).toBe('001');
     expect(result.items[0].lawNameKo).toBe('민법');
+    expect(result.items[0].detailLink).toContain('lsiSeq=1');
     expect(result.items[1].lawId).toBe('002');
   });
 
@@ -57,6 +60,7 @@ describe('parseLawSearchXml', () => {
           공포번호: '471',
           시행일자: '19600101',
           제개정구분명: '제정',
+          법령상세링크: 'https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=1',
         },
       },
     };

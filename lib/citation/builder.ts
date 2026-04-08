@@ -1,3 +1,4 @@
+import { formatArticleLabel } from '@/lib/law/article-number';
 import type { CitationType } from './types';
 
 const LAW_GO_KR_BASE = 'https://www.law.go.kr';
@@ -5,8 +6,9 @@ const LAW_GO_KR_BASE = 'https://www.law.go.kr';
 /** 법령 페이지 URL 생성 (한글주소 형식) */
 export function buildStatuteUrl(lawName: string, articleNumber?: string): string {
   const base = `${LAW_GO_KR_BASE}/법령/${encodeURIComponent(lawName)}`;
-  if (articleNumber) {
-    return `${base}/제${articleNumber}조`;
+  const articleLabel = articleNumber ? formatArticleLabel(articleNumber) : undefined;
+  if (articleLabel) {
+    return `${base}/${encodeURIComponent(articleLabel)}`;
   }
   return base;
 }
