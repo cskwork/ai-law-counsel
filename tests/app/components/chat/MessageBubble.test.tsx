@@ -16,6 +16,18 @@ describe('MessageBubble', () => {
       expect(button).toBeDefined();
     });
 
+    it('공백이 포함된 cite: 링크도 CitationCard 버튼으로 렌더링해야 한다', () => {
+      render(
+        <MessageBubble
+          role="assistant"
+          content="[자동차손해배상 보장법 시행령 제3조](cite:statute/자동차손해배상 보장법 시행령/3)에서 규정하는 책임보험금의 한도 내에서 산정됩니다."
+        />,
+      );
+
+      const button = screen.getByRole('button', { name: /자동차손해배상 보장법 시행령 제3조/ });
+      expect(button).toBeInTheDocument();
+    });
+
     it('cite: 링크가 일반 <a> 태그가 아닌 버튼으로 렌더링되어야 한다', () => {
       const { container } = render(
         <MessageBubble

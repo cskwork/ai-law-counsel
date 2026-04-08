@@ -24,6 +24,7 @@
 - **fix**: 법령 검색 결과의 공식 `법령상세링크`를 우선 사용하도록 변경
 - **fix**: CitationCard가 HTML 에러 페이지를 JSON으로 파싱하다 깨지는 문제를 방어 처리
 - **fix**: DRF 실패 시 law.go.kr 공개 본문 페이지(`lsInfoR.do`)에서 조문 전문을 파싱하는 fallback 추가
+- **fix**: 공백이 포함된 `cite:` 법령 링크도 마크다운 렌더링 전에 URL-encode하여 CitationCard가 정상 표시되도록 보정
 
 ### US3: 법률 문서 템플릿 (P2)
 - **feat**: 5종 법률 문서 템플릿 타입 정의 (임대차/근로/내용증명/위임장/NDA)
@@ -36,6 +37,8 @@
 - **feat**: 문서 업로드 관련 상수 (MAX_FILE_SIZE, SUPPORTED_FILE_TYPES, MAX_EXTRACTED_TEXT_LENGTH)
 - **feat**: Citation 확장 타입 (fullText, externalUrl, verified, articleNumber)
 - **feat**: 대형 문서 텍스트 청킹 유틸리티
+- **fix**: 채팅 요청 검증을 역할별 길이 제한으로 분리해 긴 assistant 응답 이후에도 이어서 대화 가능하도록 조정
+- **fix**: 채팅 전송 시 최근 연속 맥락만 문자 수 예산 내로 windowing 하도록 변경하여 과도한 히스토리로 인한 차단을 완화
 
 ### 테스트
 - 신규 테스트 파일 7개, 테스트 케이스 27개 추가
