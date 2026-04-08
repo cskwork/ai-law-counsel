@@ -104,9 +104,11 @@ export async function GET(request: Request) {
         fetchedAt: new Date().toISOString(),
       },
     });
-  } catch {
+  } catch (err: unknown) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error('[citation] 조회 실패:', detail);
     return Response.json(
-      { success: false, error: '국가법령정보센터에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' },
+      { success: false, error: '국가법령정보센터에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.', detail },
       { status: 503 },
     );
   }
