@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createZaiClient } from '@/lib/zai/client';
-import { createMcpClientSession } from '@/lib/mcp/client';
-import { mcpToolsToLlmTools } from '@/lib/mcp/tool-bridge';
+import { LAW_TOOL_DEFINITIONS, executeLawToolCall } from '@/lib/law/tools';
 import { CLARIFY_TOOL } from '@/lib/zai/tools-schema';
 import { executeToolCall } from '@/lib/chat/tool-executor';
 import { orchestrateChat } from '@/lib/chat/orchestrator';
@@ -48,18 +47,13 @@ function validateRequest(body: unknown): ChatRequestBody {
 }
 
 export async function POST(request: NextRequest) {
-  let mcpSession: ReturnType<typeof createMcpClientSession> | null = null;
-
   try {
     const body = await request.json();
     const { messages } = validateRequest(body);
 
     const zaiClient = createZaiClient();
-    mcpSession = createMcpClientSession();
 
-    // MCP에서 법률 도구 동적 로드 + 로컬 clarify 도구
-    const mcpTools = await mcpSession.listTools();
-    const llmTools = [...mcpToolsToLlmTools(mcpTools), CLARIFY_TOOL];
+    const llmTools = [...LAW_TOOL_DEFINITIONS, CLARIFY_TOOL];
 
     const { stream, writer } = createSSEStream();
 
@@ -75,7 +69,7 @@ export async function POST(request: NextRequest) {
         },
         executeTool: (name, args) =>
           executeToolCall(name, args, {
-            callMcpTool: (toolName, toolArgs) => mcpSession!.callTool(toolName, toolArgs),
+            callTool: executeLawToolCall,
           }),
       },
     );
@@ -85,12 +79,7 @@ export async function POST(request: NextRequest) {
         const message = error instanceof Error ? error.message : '알 수 없는 오류';
         writer.write({ type: 'error', message });
       })
-      .finally(async () => {
-        try {
-          await mcpSession?.close();
-        } catch {
-          // best-effort: SSE 응답은 닫되 세션 정리 오류는 사용자에게 노출하지 않음
-        }
+      .finally(() => {
         writer.close();
       });
 
@@ -102,12 +91,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    try {
-      await mcpSession?.close();
-    } catch {
-      // best-effort: 초기화 실패 경로의 세션 정리 오류는 무시
-    }
-
     const message = error instanceof Error ? error.message : '��버 오류';
     return new Response(JSON.stringify({ error: message }), {
       status: 400,

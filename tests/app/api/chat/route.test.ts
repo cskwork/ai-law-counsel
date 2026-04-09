@@ -1,24 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const mockSession = {
-  listTools: vi.fn(),
-  callTool: vi.fn(),
-  close: vi.fn(),
-};
-
-const mockCreateMcpClientSession = vi.fn();
-const mockLegacyListMcpTools = vi.fn();
-const mockLegacyCallMcpTool = vi.fn();
+const mockExecuteLawToolCall = vi.fn();
 const mockOrchestrateChat = vi.fn();
 const mockCreateZaiClient = vi.fn();
 const mockWriterWrite = vi.fn();
 const mockWriterClose = vi.fn();
 
-vi.mock('@/lib/mcp/client', () => ({
-  createMcpClientSession: mockCreateMcpClientSession,
-  listMcpTools: mockLegacyListMcpTools,
-  callMcpTool: mockLegacyCallMcpTool,
+vi.mock('@/lib/law/tools', () => ({
+  LAW_TOOL_DEFINITIONS: [
+    {
+      type: 'function',
+      function: {
+        name: 'search_law',
+        description: '법령 검색',
+        parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+      },
+    },
+  ],
+  executeLawToolCall: mockExecuteLawToolCall,
 }));
 
 vi.mock('@/lib/chat/orchestrator', () => ({
@@ -56,18 +56,12 @@ function buildRequest(): NextRequest {
   });
 }
 
-describe('/api/chat route MCP session lifecycle', () => {
+describe('/api/chat route local law tool wiring', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
 
-    mockSession.listTools.mockResolvedValue([]);
-    mockSession.callTool.mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] });
-    mockSession.close.mockResolvedValue(undefined);
-
-    mockCreateMcpClientSession.mockReturnValue(mockSession);
-    mockLegacyListMcpTools.mockResolvedValue([]);
-    mockLegacyCallMcpTool.mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] });
+    mockExecuteLawToolCall.mockResolvedValue('{"totalCount":1,"items":[]}');
     mockOrchestrateChat.mockResolvedValue(undefined);
     mockCreateZaiClient.mockReturnValue({
       completeChatWithTools: vi.fn(),
@@ -75,7 +69,7 @@ describe('/api/chat route MCP session lifecycle', () => {
     });
   });
 
-  it('closes the MCP session after a successful stream completes', async () => {
+  it('returns an SSE response and delegates tool execution to local law tools', async () => {
     const { POST } = await import('@/app/api/chat/route');
 
     const response = await POST(buildRequest());
@@ -84,11 +78,11 @@ describe('/api/chat route MCP session lifecycle', () => {
 
     await flushMicrotasks();
 
-    expect(mockCreateMcpClientSession).toHaveBeenCalledOnce();
-    expect(mockSession.close).toHaveBeenCalledOnce();
+    expect(response.headers.get('Content-Type')).toBe('text/event-stream');
+    expect(mockOrchestrateChat).toHaveBeenCalledOnce();
   });
 
-  it('closes the MCP session after orchestration errors', async () => {
+  it('writes an SSE error event when orchestration fails', async () => {
     mockOrchestrateChat.mockRejectedValueOnce(new Error('upstream failed'));
 
     const { POST } = await import('@/app/api/chat/route');
@@ -99,8 +93,6 @@ describe('/api/chat route MCP session lifecycle', () => {
 
     await flushMicrotasks();
 
-    expect(mockCreateMcpClientSession).toHaveBeenCalledOnce();
-    expect(mockSession.close).toHaveBeenCalledOnce();
     expect(mockWriterWrite).toHaveBeenCalledWith({
       type: 'error',
       message: 'upstream failed',

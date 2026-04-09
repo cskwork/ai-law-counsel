@@ -1,7 +1,7 @@
 /**
  * 로컬 도구 스키마 정의
- * - MCP에서 가져오지 않는 로컬 전용 도구
- * - 법률 도구는 korean-law-mcp 서버에서 동적으로 로드
+ * - 채팅 오케스트레이터에서 공통으로 쓰는 로컬 전용 도구
+ * - 법률 검색/조회 도구는 lib/law/tools.ts에서 관리
  */
 import type { ToolDefinition } from '@/lib/zai/types';
 
