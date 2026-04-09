@@ -1,16 +1,25 @@
 import type { Metadata, Viewport } from 'next';
-import localFont from 'next/font/local';
+import { Noto_Serif_KR, Noto_Sans_KR, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-const geist = localFont({
-  src: './fonts/GeistVF.woff',
-  variable: '--font-geist',
+const notoSerifKr = Noto_Serif_KR({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-noto-serif-kr',
   display: 'swap',
 });
 
-const geistMono = localFont({
-  src: './fonts/GeistMonoVF.woff',
-  variable: '--font-geist-mono',
+const notoSansKr = Noto_Sans_KR({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-noto-sans-kr',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-jetbrains-mono',
   display: 'swap',
 });
 
@@ -35,8 +44,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko" className={`${geist.variable} ${geistMono.variable}`}>
-      <body className="min-h-[100dvh] bg-zinc-50 text-zinc-950 font-[family-name:var(--font-geist)] antialiased">
+    <html lang="ko" className={`${notoSerifKr.variable} ${notoSansKr.variable} ${jetbrainsMono.variable}`}>
+      <body className="min-h-[100dvh] bg-surface-ground text-ink-primary font-body antialiased">
         {children}
       </body>
     </html>

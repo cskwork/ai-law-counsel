@@ -1,5 +1,6 @@
+import { composeArticleNumber } from '@/lib/law/article-number';
 import { toArray } from '@/lib/utils/array';
-import type { LawApiClient } from '@/lib/law/client';
+import type { LawApiClient, LawDetailUrlOptions } from '@/lib/law/client';
 import type { LawArticle, LawDetail } from '@/lib/law/types';
 
 /**
@@ -16,7 +17,10 @@ export function parseLawDetailXml(parsed: Record<string, unknown>): LawDetail {
   );
 
   const articles: LawArticle[] = rawArticles.map((item) => ({
-    articleNumber: String(item.조문번호 ?? ''),
+    articleNumber: composeArticleNumber(
+      item.조문번호 as string | number | undefined,
+      item.조문가지번호 as string | number | undefined,
+    ) ?? String(item.조문번호 ?? ''),
     articleTitle: String(item.조문제목 ?? ''),
     articleContent: String(item.조문내용 ?? ''),
   }));
@@ -38,9 +42,13 @@ export function parseLawDetailXml(parsed: Record<string, unknown>): LawDetail {
  */
 export async function getLawDetail(
   client: LawApiClient,
-  lawId: string
+  lawId: string,
+  options: LawDetailUrlOptions = {},
 ): Promise<LawDetail> {
-  const url = client.buildDetailUrl('law', lawId);
+  const url = client.buildDetailUrl('law', lawId, {
+    lawIdentifierType: options.lawIdentifierType ?? 'ID',
+    articleJo: options.articleJo,
+  });
   const parsed = await client.fetchAndParse(url);
   return parseLawDetailXml(parsed as Record<string, unknown>);
 }

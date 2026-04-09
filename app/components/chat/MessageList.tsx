@@ -24,7 +24,7 @@ interface MessageListProps {
 
 const SCROLL_THRESHOLD = 100; // 하단에서 100px 이내면 auto-scroll 유지
 
-// 메시지 목록 (스마트 자동 스크롤 + 스켈레톤 로더)
+// 메시지 목록 (스마트 자동 스크롤 + 타이핑 커서)
 export function MessageList({ events, isStreaming }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -49,7 +49,7 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
       onScroll={handleScroll}
       className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6"
     >
-      <div className="max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-0.5">
+      <div className="max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-4">
         {events.map((event) => {
           if (event.type === 'message' && event.role && event.content) {
             return (
@@ -76,12 +76,11 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
           return null;
         })}
         {isStreaming && events[events.length - 1]?.type !== 'tool_call' && (
-          <div className="flex justify-start my-1.5 animate-fade-up">
-            <div className="max-w-[90%] sm:max-w-[80%] lg:max-w-[75%] rounded-2xl bg-white px-5 py-4 shadow-sm shadow-zinc-200/50 ring-1 ring-zinc-100">
-              <div className="flex flex-col gap-2.5">
-                <div className="h-3 w-56 rounded-md animate-shimmer" />
-                <div className="h-3 w-72 rounded-md animate-shimmer [animation-delay:0.05s]" />
-                <div className="h-3 w-44 rounded-md animate-shimmer [animation-delay:0.1s]" />
+          <div className="my-3 animate-settle">
+            <div className="border-l-[3px] border-authority-light pl-5 py-2">
+              <div className="flex items-center gap-2">
+                <div className="w-0.5 h-5 bg-accent-gold animate-cursor rounded-full" />
+                <span className="text-xs text-ink-tertiary">답변 작성 중...</span>
               </div>
             </div>
           </div>

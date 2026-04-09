@@ -5,6 +5,8 @@
  */
 import type { ChatMessage, ToolDefinition, ZaiResponse } from '@/lib/zai/types';
 import type { SSEEvent, SourceItem } from '@/lib/utils/sse';
+import { buildExternalUrl } from '@/lib/citation/builder';
+import type { CitationType } from '@/lib/citation/types';
 import { SYSTEM_PROMPT } from './system-prompt';
 
 /** 도구 호출 최대 반복 횟수 */
@@ -157,9 +159,9 @@ function safeParseJson(json: string): Record<string, unknown> | undefined {
 /** 최대 출처 수집 수 (검색 결과 당) */
 const MAX_SOURCES_PER_RESULT = 10;
 
-/** 법령은 이름 기반 URL이 항상 유효 (판례/행정규칙은 URL 패턴이 불확실) */
+/** 법령은 이름 기반 URL이 항상 유효 */
 function buildLawUrl(lawName: string): string {
-  return `https://www.law.go.kr/법령/${encodeURIComponent(lawName)}`;
+  return buildExternalUrl('statute' as CitationType, lawName);
 }
 
 /** 도구 결과에서 출처 정보 추출 */

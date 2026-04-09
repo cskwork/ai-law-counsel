@@ -30,7 +30,7 @@ export function CopyButton({ content }: CopyButtonProps) {
   return (
     <button
       onClick={handleCopy}
-      className="rounded-md p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
+      className="rounded-md p-1.5 text-ink-tertiary transition-colors hover:bg-surface-elevated hover:text-authority-mid"
       title={copied ? '복사됨' : '복사'}
     >
       {copied ? (
@@ -38,7 +38,7 @@ export function CopyButton({ content }: CopyButtonProps) {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className="h-4 w-4 text-green-500"
+          className="h-4 w-4 text-status-success"
         >
           <path
             fillRule="evenodd"

@@ -117,5 +117,19 @@ describe('sanitizeContent', () => {
     it('HTML 엔티티는 건드리지 않는다', () => {
       expect(sanitizeContent('&amp; &lt;br&gt;')).toBe('&amp; &lt;br&gt;');
     });
+
+    it('공백이 포함된 cite: 링크 목적지를 URL-encode 한다', () => {
+      const input = '[자동차손해배상 보장법 시행령 제3조](cite:statute/자동차손해배상 보장법 시행령/3)';
+      const result = sanitizeContent(input);
+
+      expect(result).toBe(
+        '[자동차손해배상 보장법 시행령 제3조](cite:statute/%EC%9E%90%EB%8F%99%EC%B0%A8%EC%86%90%ED%95%B4%EB%B0%B0%EC%83%81%20%EB%B3%B4%EC%9E%A5%EB%B2%95%20%EC%8B%9C%ED%96%89%EB%A0%B9/3)',
+      );
+    });
+
+    it('이미 encode된 cite: 링크를 다시 encode하지 않는다', () => {
+      const input = '[민법 제750조](cite:statute/%EB%AF%BC%EB%B2%95/750)';
+      expect(sanitizeContent(input)).toBe(input);
+    });
   });
 });

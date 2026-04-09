@@ -13,6 +13,7 @@ export interface LawSearchItem {
   readonly promulgationNumber: string;
   readonly enforcementDate: string;
   readonly amendmentType: string;
+  readonly detailLink?: string;
 }
 
 /** 법령 검색 결과 */

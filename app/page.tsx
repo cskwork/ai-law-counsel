@@ -5,6 +5,7 @@ import { Disclaimer } from '@/app/components/common/Disclaimer';
 import { ChatContainer } from '@/app/components/chat/ChatContainer';
 import { Sidebar } from '@/app/components/chat/Sidebar';
 import { useConversationHistory } from '@/app/hooks/useConversationHistory';
+import { useFontSize } from '@/app/hooks/useFontSize';
 
 export default function Home() {
   const {
@@ -19,6 +20,7 @@ export default function Home() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const { canIncrease, canDecrease, increase, decrease } = useFontSize();
 
   // 새 대화용 안정 ID (activeId가 null일 때 사용)
   const [pendingId, setPendingId] = useState('');
@@ -68,7 +70,7 @@ export default function Home() {
   const activeConversation = activeId ? load(activeId) : null;
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-zinc-50">
+    <div className="flex min-h-[100dvh] flex-col bg-surface-ground">
       <Disclaimer />
       <Sidebar
         conversations={conversations}
@@ -82,11 +84,11 @@ export default function Home() {
       />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col min-w-0">
-          <header className="sticky top-0 z-10 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md px-4 py-3">
+          <header className="sticky top-0 z-10 border-b border-border-default bg-surface-primary px-4 py-3">
             <div className="flex items-center justify-center relative max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto">
               <button
                 onClick={handleToggleSidebar}
-                className="absolute left-0 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
+                className="absolute left-0 rounded-lg p-2 text-ink-tertiary transition-colors hover:bg-surface-elevated hover:text-ink-secondary"
                 title="대화 목록"
               >
                 <svg
@@ -102,9 +104,27 @@ export default function Home() {
                   />
                 </svg>
               </button>
-              <h1 className="text-base font-semibold tracking-tight text-zinc-900">
-                법률 상담 AI
+              <h1 className="font-display text-base font-semibold tracking-tight text-ink-primary">
+                법률 상담
               </h1>
+              <div className="absolute right-0 flex items-center gap-0.5">
+                <button
+                  onClick={decrease}
+                  disabled={!canDecrease}
+                  className="rounded-md px-1.5 py-1 text-xs font-medium text-ink-tertiary transition-colors hover:bg-surface-elevated hover:text-ink-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="글자 크기 줄이기"
+                >
+                  A-
+                </button>
+                <button
+                  onClick={increase}
+                  disabled={!canIncrease}
+                  className="rounded-md px-1.5 py-1 text-sm font-medium text-ink-tertiary transition-colors hover:bg-surface-elevated hover:text-ink-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="글자 크기 키우기"
+                >
+                  A+
+                </button>
+              </div>
             </div>
           </header>
           <main className="flex-1 overflow-hidden">
