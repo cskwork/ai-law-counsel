@@ -33,10 +33,38 @@ const HTML_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\n{3,}/g, '\n\n'],
 ];
 
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeCiteUrl(url: string): string {
+  if (!url.startsWith('cite:')) return url;
+
+  const segments = url.replace('cite:', '').split('/');
+  if (segments.length < 2) return url;
+
+  const [type, ...rest] = segments;
+  const encodedSegments = rest.map((segment) => encodeURIComponent(safeDecodeURIComponent(segment)));
+
+  return `cite:${[type, ...encodedSegments].join('/')}`;
+}
+
+/** 공백이 포함된 cite: 링크를 마크다운 파서가 읽을 수 있는 형태로 정규화 */
+function normalizeCitationMarkdownLinks(content: string): string {
+  return content.replace(
+    /\[([^\]]+)\]\((cite:[^)]+)\)/g,
+    (_match, label: string, url: string) => `[${label}](${normalizeCiteUrl(url)})`,
+  );
+}
+
 export function sanitizeContent(content: string): string {
   let result = content;
   for (const [pattern, replacement] of HTML_REPLACEMENTS) {
     result = result.replace(pattern, replacement);
   }
-  return result.trim();
+  return normalizeCitationMarkdownLinks(result).trim();
 }

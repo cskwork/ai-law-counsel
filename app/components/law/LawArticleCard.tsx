@@ -5,15 +5,15 @@ interface LawArticleCardProps {
   articleContent: string;
 }
 
-// 법령 조문 카드 (blue accent, 1px whisper border)
+// 법령 조문 카드 (남색 좌측 보더, 세리프 제목)
 export function LawArticleCard({ lawName, articleNumber, articleTitle, articleContent }: LawArticleCardProps) {
   return (
-    <div className="my-2 rounded-xl bg-blue-50/50 p-4 ring-1 ring-blue-100">
-      <div className="mb-1 text-[11px] font-medium uppercase tracking-widest text-blue-500">{lawName}</div>
-      <div className="mb-2 text-sm font-semibold tracking-tight text-zinc-900">
-        {articleNumber} {articleTitle}
+    <div className="my-2 border-l-[3px] border-cite-law bg-cite-law-bg p-4">
+      <div className="mb-1 font-display text-[11px] font-semibold uppercase tracking-widest text-cite-law">{lawName}</div>
+      <div className="mb-2 text-sm font-semibold tracking-tight text-ink-primary">
+        <span className="font-mono text-ink-secondary">{articleNumber}</span> {articleTitle}
       </div>
-      <p className="text-sm leading-relaxed text-zinc-600 whitespace-pre-wrap">{articleContent}</p>
+      <p className="text-sm leading-relaxed text-ink-secondary whitespace-pre-wrap">{articleContent}</p>
     </div>
   );
 }

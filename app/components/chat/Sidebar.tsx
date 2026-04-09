@@ -56,34 +56,35 @@ export function Sidebar({
 
   return (
     <>
-      {/* 배경 딤 */}
+      {/* 배경 딤 (남색 틴트) */}
       <div
         className={`
-          fixed inset-0 z-30 bg-black/30 transition-opacity duration-300
+          fixed inset-0 z-30 transition-opacity duration-300
           ${isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}
         `}
+        style={{ backgroundColor: 'rgba(27, 42, 74, 0.4)' }}
         onClick={onToggle}
       />
 
       {/* 사이드바 패널 */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-zinc-200
+          fixed inset-y-0 left-0 z-40 w-72 bg-surface-elevated border-r border-border-default
           flex flex-col transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         {/* 상단: 새 채팅 + 닫기 */}
-        <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-3">
+        <div className="flex items-center justify-between border-b border-border-default px-3 py-3">
           <button
             onClick={onNew}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
+            className="flex items-center gap-2 rounded-lg bg-authority-deep px-3 py-2 text-sm font-medium text-ink-inverse transition-colors hover:bg-authority-mid"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
-              className="h-4 w-4"
+              className="h-4 w-4 text-accent-gold"
             >
               <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
             </svg>
@@ -91,7 +92,7 @@ export function Sidebar({
           </button>
           <button
             onClick={onToggle}
-            className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
+            className="rounded-lg p-2 text-ink-tertiary transition-colors hover:bg-surface-sunken hover:text-ink-secondary"
             title="사이드바 닫기"
           >
             <svg
@@ -110,9 +111,14 @@ export function Sidebar({
         </div>
 
         {/* 대화 목록 */}
-        <nav className="flex-1 overflow-y-auto scrollbar-thin px-2 py-2">
+        <div className="px-3 pt-3 pb-1">
+          <p className="font-display text-[11px] font-semibold uppercase tracking-wider text-ink-tertiary">
+            대화 목록
+          </p>
+        </div>
+        <nav className="flex-1 overflow-y-auto scrollbar-thin px-2 py-1">
           {conversations.length === 0 ? (
-            <p className="px-3 py-8 text-center text-xs text-zinc-400">
+            <p className="px-3 py-8 text-center text-xs text-ink-tertiary">
               대화 기록이 없습니다
             </p>
           ) : (
@@ -125,20 +131,20 @@ export function Sidebar({
                       group/item flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left transition-colors
                       ${
                         activeId === conv.id
-                          ? 'bg-zinc-100 text-zinc-900'
-                          : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
+                          ? 'border-l-[3px] border-accent-gold bg-surface-sunken text-ink-primary'
+                          : 'border-l-[3px] border-transparent text-ink-secondary hover:bg-surface-sunken hover:text-ink-primary'
                       }
                     `}
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{conv.title}</p>
-                      <p className="mt-0.5 text-xs text-zinc-400">
+                      <p className="mt-0.5 text-xs text-ink-tertiary">
                         {formatRelativeTime(conv.updatedAt)}
                       </p>
                     </div>
                     <button
                       onClick={(e) => handleDelete(e, conv.id)}
-                      className="ml-2 shrink-0 rounded-md p-1 text-zinc-300 opacity-0 transition-all hover:bg-zinc-200 hover:text-zinc-600 group-hover/item:opacity-100"
+                      className="ml-2 shrink-0 rounded-md p-1 text-ink-tertiary opacity-0 transition-all hover:bg-status-error-bg hover:text-status-error group-hover/item:opacity-100"
                       title="삭제"
                     >
                       <svg
@@ -163,10 +169,10 @@ export function Sidebar({
 
         {/* 하단: 전체 삭제 */}
         {conversations.length > 0 && (
-          <div className="border-t border-zinc-200 px-3 py-3">
+          <div className="border-t border-border-default px-3 py-3">
             <button
               onClick={handleDeleteAll}
-              className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500"
+              className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-tertiary transition-colors hover:bg-status-error-bg hover:text-status-error"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

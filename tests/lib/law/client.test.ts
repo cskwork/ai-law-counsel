@@ -47,13 +47,20 @@ describe('LawApiClient', () => {
   });
 
   describe('buildDetailUrl', () => {
-    it('법령 상세 URL에 MST 파라미터를 사용해야 한다', () => {
+    it('법령 상세 URL에 ID 파라미터를 사용해야 한다', () => {
       const url = client.buildDetailUrl('law', '123456');
 
       expect(url).toContain('lawService.do');
-      expect(url).toContain('MST=123456');
+      expect(url).toContain('ID=123456');
       expect(url).toContain('OC=test-api-key');
       expect(url).toContain('type=XML');
+    });
+
+    it('조문 번호가 있으면 JO 파라미터를 포함해야 한다', () => {
+      const url = client.buildDetailUrl('law', '123456', { articleJo: '000800' });
+
+      expect(url).toContain('ID=123456');
+      expect(url).toContain('JO=000800');
     });
 
     it('판례 상세 URL에 ID 파라미터를 사용해야 한다', () => {

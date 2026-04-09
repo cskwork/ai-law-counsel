@@ -7,7 +7,7 @@ interface ChatInputProps {
   disabled: boolean;
 }
 
-// 메시지 입력 컴포넌트 (자동 높이 조절 + 촉각 피드백)
+// 메시지 입력 컴포넌트 (자동 높이 조절)
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -37,7 +37,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   return (
-    <div className="border-t border-zinc-200/80 bg-white px-4 py-3 sm:py-4">
+    <div className="border-t border-border-default bg-surface-primary px-4 py-3 sm:py-4">
       <div className="flex items-end gap-2 max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto">
         <textarea
           ref={textareaRef}
@@ -47,14 +47,17 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           disabled={disabled}
           placeholder="법률 관련 질문을 입력하세요..."
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 transition-all duration-200"
+          className="flex-1 resize-none rounded-lg border border-border-default bg-surface-sunken px-4 py-3 text-base text-ink-primary placeholder:text-ink-tertiary focus:border-authority-deep focus:border-2 focus:bg-surface-primary focus:outline-none disabled:opacity-50 transition-all duration-200"
         />
         <button
           onClick={handleSubmit}
           disabled={disabled || !input.trim()}
-          className="rounded-xl bg-zinc-900 px-5 py-3 text-sm font-medium text-white transition-all duration-150 hover:bg-zinc-800 active:scale-[0.97] disabled:bg-zinc-200 disabled:text-zinc-400 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 rounded-lg bg-authority-deep px-5 py-3 text-sm font-medium text-ink-inverse transition-all duration-150 hover:bg-authority-mid active:scale-[0.97] disabled:bg-surface-sunken disabled:text-ink-tertiary disabled:cursor-not-allowed"
         >
           전송
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
+            <path d="M2.87 2.298a.75.75 0 0 0-.812 1.021L3.39 6.624a1 1 0 0 0 .928.626H8.25a.75.75 0 0 1 0 1.5H4.318a1 1 0 0 0-.927.626l-1.333 3.305a.75.75 0 0 0 .812 1.021l11.07-3.548a.75.75 0 0 0 0-1.408L2.87 2.298Z" />
+          </svg>
         </button>
       </div>
     </div>

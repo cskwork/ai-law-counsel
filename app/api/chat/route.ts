@@ -4,52 +4,14 @@ import { LAW_TOOL_DEFINITIONS, executeLawToolCall } from '@/lib/law/tools';
 import { CLARIFY_TOOL } from '@/lib/zai/tools-schema';
 import { executeToolCall } from '@/lib/chat/tool-executor';
 import { orchestrateChat } from '@/lib/chat/orchestrator';
+import { validateChatRequest } from '@/lib/chat/request-validation';
 import { createSSEStream } from '@/lib/utils/sse';
 import { parseZaiStream } from '@/lib/utils/zai-stream';
-import type { ChatMessage } from '@/lib/zai/types';
-import { MAX_CONTEXT_MESSAGES } from '@/lib/constants';
-
-const MAX_MESSAGE_LENGTH = 2000;
-
-interface ChatRequestBody {
-  messages: ChatMessage[];
-}
-
-function validateRequest(body: unknown): ChatRequestBody {
-  if (!body || typeof body !== 'object') {
-    throw new Error('요청 본문이 비어있습니다');
-  }
-
-  const { messages } = body as Record<string, unknown>;
-
-  if (!Array.isArray(messages)) {
-    throw new Error('messages는 배열이어야 합니다');
-  }
-
-  if (messages.length === 0) {
-    throw new Error('메시지가 비어있습니다');
-  }
-
-  if (messages.length > MAX_CONTEXT_MESSAGES) {
-    throw new Error(`메시지는 최대 ${MAX_CONTEXT_MESSAGES}개까지 가능합니다`);
-  }
-
-  for (const msg of messages) {
-    if (!msg.role || !msg.content) {
-      throw new Error('각 메��지에는 role과 content가 필요합니다');
-    }
-    if (typeof msg.content === 'string' && msg.content.length > MAX_MESSAGE_LENGTH) {
-      throw new Error(`메시지 길이는 최대 ${MAX_MESSAGE_LENGTH}자까지 가능합니다`);
-    }
-  }
-
-  return { messages: messages as ChatMessage[] };
-}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages } = validateRequest(body);
+    const { messages, documentContext } = validateChatRequest(body);
 
     const zaiClient = createZaiClient();
 
@@ -57,8 +19,17 @@ export async function POST(request: NextRequest) {
 
     const { stream, writer } = createSSEStream();
 
+    // documentContext가 있으면 마지막 사용자 메시지에 문서 텍스트 첨부
+    const enrichedMessages = documentContext
+      ? messages.map((msg, i) =>
+          i === messages.length - 1 && msg.role === 'user'
+            ? { ...msg, content: `[문서 분석 요청: ${documentContext.fileName}]\n\n--- 추출된 문서 내용 ---\n${documentContext.extractedText}\n--- 문서 끝 ---\n\n${msg.content}` }
+            : msg
+        )
+      : messages;
+
     const orchestrationPromise = orchestrateChat(
-      messages,
+      enrichedMessages,
       (event) => writer.write(event),
       {
         tools: llmTools,
