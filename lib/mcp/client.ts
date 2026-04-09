@@ -1,9 +1,8 @@
 /**
  * korean-law-mcp 클라이언트
- * - StreamableHTTP 트랜스포트로 fly.dev 원격 서버 연결
- * - 세션 생명주기 관리: terminateSession() + close()로 누수 방지
- * - 개발 모드 HMR 대응: globalThis 캐시 (Prisma 패턴)
- * - 세션 오류 시 자동 재연결 (1회)
+ * - 기본 단위는 요청/작업 범위의 세션 객체다.
+ * - 각 세션은 terminateSession() + close()로 명시 종료한다.
+ * - 레거시 top-level 함수는 하위 호환용 래퍼로만 유지한다.
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -11,25 +10,17 @@ import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 const CONNECTION_TIMEOUT_MS = 15_000;
 
-interface McpCache {
+interface SessionState {
   client: Client | null;
   transport: StreamableHTTPClientTransport | null;
   tools: Tool[] | null;
+  connectPromise: Promise<Client> | null;
 }
 
-const GLOBAL_KEY = '__mcp_cache__' as const;
-const moduleCache: McpCache = { client: null, transport: null, tools: null };
-
-/** 개발 모드에서는 globalThis로 HMR 재시작 시 캐시 유지 */
-function getCache(): McpCache {
-  if (process.env.NODE_ENV === 'development') {
-    const g = globalThis as unknown as Record<string, McpCache>;
-    if (!g[GLOBAL_KEY]) {
-      g[GLOBAL_KEY] = { client: null, transport: null, tools: null };
-    }
-    return g[GLOBAL_KEY];
-  }
-  return moduleCache;
+export interface McpClientSession {
+  listTools(): Promise<Tool[]>;
+  callTool(name: string, args: Record<string, unknown>): Promise<CallToolResult>;
+  close(): Promise<void>;
 }
 
 /** MCP 서버 URL 생성 */
@@ -58,126 +49,196 @@ function isSessionError(error: unknown): boolean {
   return false;
 }
 
-/** MCP 클라이언트 연결 (싱글톤) */
-async function getClient(): Promise<Client> {
-  const cache = getCache();
-  if (cache.client) {
-    return cache.client;
-  }
-
-  const client = new Client({
-    name: 'ai-law-counsel',
-    version: '0.1.0',
-  });
-
-  const transport = new StreamableHTTPClientTransport(buildMcpUrl());
-
-  client.onclose = () => {
-    const c = getCache();
-    if (c.client === client) {
-      c.client = null;
-      c.transport = null;
-      c.tools = null;
-    }
+class RequestScopedMcpClientSession implements McpClientSession {
+  private readonly state: SessionState = {
+    client: null,
+    transport: null,
+    tools: null,
+    connectPromise: null,
   };
 
-  const connectPromise = client.connect(transport);
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('MCP 서버 연결 타임아웃')), CONNECTION_TIMEOUT_MS),
-  );
+  async listTools(): Promise<Tool[]> {
+    if (this.state.tools) {
+      return this.state.tools;
+    }
 
-  await Promise.race([connectPromise, timeoutPromise]);
+    try {
+      return await this.fetchTools();
+    } catch (error) {
+      if (!isSessionError(error)) {
+        throw error;
+      }
 
-  cache.client = client;
-  cache.transport = transport;
-  return client;
+      await this.reset();
+      return await this.fetchTools();
+    }
+  }
+
+  async callTool(
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<CallToolResult> {
+    try {
+      const client = await this.getClient();
+      const result = await client.callTool({ name, arguments: args });
+      return result as CallToolResult;
+    } catch (error) {
+      if (!isSessionError(error)) {
+        throw error;
+      }
+
+      await this.reset();
+      const client = await this.getClient();
+      const result = await client.callTool({ name, arguments: args });
+      return result as CallToolResult;
+    }
+  }
+
+  async close(): Promise<void> {
+    await this.reset();
+  }
+
+  private async fetchTools(): Promise<Tool[]> {
+    const client = await this.getClient();
+    const allTools: Tool[] = [];
+    let cursor: string | undefined;
+
+    do {
+      const result = await client.listTools({ cursor });
+      allTools.push(...result.tools);
+      cursor = result.nextCursor;
+    } while (cursor);
+
+    this.state.tools = allTools;
+    return allTools;
+  }
+
+  private async getClient(): Promise<Client> {
+    if (this.state.client) {
+      return this.state.client;
+    }
+
+    if (this.state.connectPromise) {
+      return await this.state.connectPromise;
+    }
+
+    const client = new Client({
+      name: 'ai-law-counsel',
+      version: '0.1.0',
+    });
+
+    const transport = new StreamableHTTPClientTransport(buildMcpUrl());
+
+    client.onclose = () => {
+      if (this.state.client === client) {
+        this.state.client = null;
+        this.state.transport = null;
+        this.state.tools = null;
+      }
+    };
+
+    const connectPromise = (async () => {
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('MCP 서버 연결 타임아웃')), CONNECTION_TIMEOUT_MS),
+      );
+
+      await Promise.race([client.connect(transport), timeoutPromise]);
+      this.state.client = client;
+      this.state.transport = transport;
+      return client;
+    })()
+      .catch(async (error) => {
+        await this.closeResources(client, transport);
+        throw error;
+      })
+      .finally(() => {
+        if (this.state.connectPromise === connectPromise) {
+          this.state.connectPromise = null;
+        }
+      });
+
+    this.state.connectPromise = connectPromise;
+    return await connectPromise;
+  }
+
+  private async reset(): Promise<void> {
+    const { client, transport } = this.state;
+
+    this.state.client = null;
+    this.state.transport = null;
+    this.state.tools = null;
+    this.state.connectPromise = null;
+
+    await this.closeResources(client, transport);
+  }
+
+  private async closeResources(
+    client: Client | null,
+    transport: StreamableHTTPClientTransport | null,
+  ): Promise<void> {
+    if (transport) {
+      try {
+        await transport.terminateSession();
+      } catch {
+        // best-effort: 서버가 이미 세션을 해제했을 수 있음
+      }
+    }
+
+    if (client) {
+      try {
+        await client.close();
+      } catch {
+        // best-effort: 클라이언트가 이미 닫혀있을 수 있음
+      }
+    }
+  }
 }
 
-/** 사용 가능한 MCP 도구 목록 조회 (캐시) */
+export function createMcpClientSession(): McpClientSession {
+  return new RequestScopedMcpClientSession();
+}
+
+let defaultSession: McpClientSession | null = null;
+
+function getDefaultSession(): McpClientSession {
+  if (!defaultSession) {
+    defaultSession = createMcpClientSession();
+  }
+
+  return defaultSession;
+}
+
+/** 하위 호환용 싱글톤 래퍼 */
 export async function listMcpTools(): Promise<Tool[]> {
-  const cache = getCache();
-  if (cache.tools) {
-    return cache.tools;
-  }
-
-  try {
-    return await fetchTools();
-  } catch (error) {
-    if (!isSessionError(error)) throw error;
-    await resetMcpClient();
-    return await fetchTools();
-  }
+  return await getDefaultSession().listTools();
 }
 
-async function fetchTools(): Promise<Tool[]> {
-  const client = await getClient();
-  const allTools: Tool[] = [];
-  let cursor: string | undefined;
-
-  do {
-    const result = await client.listTools({ cursor });
-    allTools.push(...result.tools);
-    cursor = result.nextCursor;
-  } while (cursor);
-
-  getCache().tools = allTools;
-  return allTools;
-}
-
-/** MCP 도구 호출 */
+/** 하위 호환용 싱글톤 래퍼 */
 export async function callMcpTool(
   name: string,
   args: Record<string, unknown>,
 ): Promise<CallToolResult> {
-  try {
-    const client = await getClient();
-    const result = await client.callTool({ name, arguments: args });
-    return result as CallToolResult;
-  } catch (error) {
-    if (!isSessionError(error)) throw error;
-    await resetMcpClient();
-    const client = await getClient();
-    const result = await client.callTool({ name, arguments: args });
-    return result as CallToolResult;
-  }
+  return await getDefaultSession().callTool(name, args);
 }
 
-/** 세션 종료 및 캐시 초기화 */
+/** 하위 호환용 싱글톤 세션 종료 */
 export async function resetMcpClient(): Promise<void> {
-  const cache = getCache();
-  const { client, transport } = cache;
+  const session = defaultSession;
+  defaultSession = null;
 
-  cache.client = null;
-  cache.transport = null;
-  cache.tools = null;
-
-  if (transport) {
-    try {
-      await transport.terminateSession();
-    } catch {
-      // best-effort: 서버가 이미 세션을 해제했을 수 있음
-    }
+  if (!session) {
+    return;
   }
 
-  if (client) {
-    try {
-      await client.close();
-    } catch {
-      // best-effort: 클라이언트가 이미 닫혀있을 수 있음
-    }
-  }
+  await session.close();
 }
 
-/** 프로세스 종료 시 세션 정리 (best-effort, fire-and-forget) */
+/** 프로세스 종료 시 기본 세션 정리 (best-effort, fire-and-forget) */
 if (typeof process !== 'undefined' && process.on) {
   const cleanup = () => {
-    const cache = getCache();
-    const { transport, client } = cache;
-    cache.client = null;
-    cache.transport = null;
-    cache.tools = null;
-    transport?.terminateSession().catch(() => {});
-    client?.close().catch(() => {});
+    const session = defaultSession;
+    defaultSession = null;
+    void session?.close();
   };
 
   process.on('beforeExit', cleanup);
