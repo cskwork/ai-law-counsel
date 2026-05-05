@@ -1,0 +1,51 @@
+name: Keep Hugging Face Space awake
+
+on:
+  schedule:
+    # 매일 00:00, 12:00 UTC 실행 (sleep_time 48h 대비 24h 마진)
+    - cron: "0 0,12 * * *"
+  workflow_dispatch:
+
+env:
+  SPACE_URL: https://csk917-korean-law-mcp.hf.space
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: HEAD ping (fast path)
+        id: head
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /dev/null -w "%{http_code}" -L -X GET "$SPACE_URL/")
+          echo "root_status=$code" >> "$GITHUB_OUTPUT"
+          echo "Root status: $code"
+          health=$(curl -sS -o /dev/null -w "%{http_code}" -L "$SPACE_URL/health")
+          echo "health_status=$health" >> "$GITHUB_OUTPUT"
+          echo "Health status: $health"
+          if [ "$code" != "200" ] && [ "$code" != "302" ] && [ "$health" != "200" ]; then
+            echo "Both root and /health failed; falling through to browser step"
+            exit 0
+          fi
+
+      - name: Install agent-browser (only if HTTP ping degraded)
+        if: steps.head.outputs.root_status != '200' && steps.head.outputs.health_status != '200'
+        run: npm install -g agent-browser
+
+      - name: Render with real browser (fallback)
+        if: steps.head.outputs.root_status != '200' && steps.head.outputs.health_status != '200'
+        run: |
+          agent-browser install --with-deps
+          agent-browser open "$SPACE_URL"
+          agent-browser wait --timeout 60000 || true
+          agent-browser screenshot page.png || true
+          agent-browser close || true
+
+      - name: Upload screenshot (fallback only)
+        if: always() && hashFiles('page.png') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: hf-space-screenshot
+          path: page.png
+          retention-days: 7
