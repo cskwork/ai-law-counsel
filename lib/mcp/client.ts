@@ -9,6 +9,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 const CONNECTION_TIMEOUT_MS = 15_000;
+const DEFAULT_MCP_BASE_URL = 'https://korean-law-mcp.fly.dev';
 
 interface SessionState {
   client: Client | null;
@@ -23,13 +24,16 @@ export interface McpClientSession {
   close(): Promise<void>;
 }
 
-/** MCP 서버 URL 생성 */
+/** MCP 서버 URL 생성 (MCP_BASE_URL 환경변수로 호스팅 전환 가능) */
 function buildMcpUrl(): URL {
   const ocKey = process.env.LAW_API_KEY;
   if (!ocKey) {
     throw new Error('LAW_API_KEY 환경변수가 설정되지 않았습니다');
   }
-  return new URL(`https://korean-law-mcp.fly.dev/mcp?oc=${ocKey}`);
+  const baseUrl = process.env.MCP_BASE_URL || DEFAULT_MCP_BASE_URL;
+  const url = new URL('/mcp', baseUrl);
+  url.searchParams.set('oc', ocKey);
+  return url;
 }
 
 /** 세션 관련 오류인지 판별 */
