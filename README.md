@@ -143,6 +143,7 @@ Open [http://localhost:3000](http://localhost:3000).
 |-----|--------|----------|
 | `ZAI_API_KEY` | [Z.ai](https://api.z.ai) | Yes |
 | `LAW_API_KEY` | [National Law Info Center](https://open.law.go.kr) | Yes (used as MCP `oc` parameter and for direct fallback calls) |
+| `MCP_BASE_URL` | korean-law-mcp host (e.g. `https://your-space.hf.space`) | No (defaults to `https://korean-law-mcp.fly.dev`) |
 
 ## Testing
 

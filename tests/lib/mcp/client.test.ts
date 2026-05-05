@@ -32,9 +32,14 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   return { Client: MockClient };
 });
 
+const transportConstructorCalls: URL[] = [];
+
 vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => {
   class MockTransport {
     terminateSession = mockTerminateSession;
+    constructor(url: URL) {
+      transportConstructorCalls.push(url);
+    }
   }
   return { StreamableHTTPClientTransport: MockTransport };
 });
@@ -46,10 +51,12 @@ describe('MCP 클라이언트 세션 관리', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockOnclose = null;
+    transportConstructorCalls.length = 0;
     // 각 테스트 전 모듈 캐시 초기화
     const { resetMcpClient } = await import('@/lib/mcp/client');
     await resetMcpClient();
     vi.clearAllMocks(); // resetMcpClient 호출로 인한 mock 카운트 초기화
+    transportConstructorCalls.length = 0;
   });
 
   describe('resetMcpClient', () => {
@@ -154,6 +161,39 @@ describe('MCP 클라이언트 세션 관리', () => {
 
       // connect는 한 번만 호출
       expect(mockConnect).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('MCP_BASE_URL 환경변수', () => {
+    it('미설정 시 fly.dev 기본 URL을 사용한다', async () => {
+      vi.stubEnv('MCP_BASE_URL', '');
+      const { listMcpTools } = await import('@/lib/mcp/client');
+
+      await listMcpTools();
+
+      expect(transportConstructorCalls).toHaveLength(1);
+      const url = transportConstructorCalls[0];
+      expect(url.origin).toBe('https://korean-law-mcp.fly.dev');
+      expect(url.pathname).toBe('/mcp');
+      expect(url.searchParams.get('oc')).toBe('test-key');
+      vi.unstubAllEnvs();
+      vi.stubEnv('LAW_API_KEY', 'test-key');
+    });
+
+    it('설정 시 해당 host로 MCP에 연결한다', async () => {
+      vi.stubEnv('LAW_API_KEY', 'test-key');
+      vi.stubEnv('MCP_BASE_URL', 'https://my-space.hf.space');
+      const { listMcpTools } = await import('@/lib/mcp/client');
+
+      await listMcpTools();
+
+      expect(transportConstructorCalls).toHaveLength(1);
+      const url = transportConstructorCalls[0];
+      expect(url.origin).toBe('https://my-space.hf.space');
+      expect(url.pathname).toBe('/mcp');
+      expect(url.searchParams.get('oc')).toBe('test-key');
+      vi.unstubAllEnvs();
+      vi.stubEnv('LAW_API_KEY', 'test-key');
     });
   });
 });
