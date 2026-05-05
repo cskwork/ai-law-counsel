@@ -46,6 +46,9 @@ API 키 발급:
 - `ZAI_API_KEY` — https://api.z.ai
 - `LAW_API_KEY` — https://open.law.go.kr
 
+선택 환경변수:
+- `MCP_BASE_URL` — korean-law-mcp 서버 호스트 (예: `https://csk917-korean-law-mcp.hf.space`). 미설정 시 `https://korean-law-mcp.fly.dev`. 자체 호스팅한 Space로 전환할 때만 설정합니다.
+
 ## 코드 스타일
 
 - TypeScript 5 / Next.js 14 App Router 컨벤션을 따릅니다.
