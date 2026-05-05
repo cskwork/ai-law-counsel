@@ -1,5 +1,55 @@
 # 2026-05-05 변경 로그
 
+## MCP 호스트 전환 가능 (`MCP_BASE_URL` 환경변수)
+
+### 배경
+
+기존 `lib/mcp/client.ts`가 `https://korean-law-mcp.fly.dev`를 하드코드해 호스팅 변경 시 코드 수정이 필요했음. fly.dev의 `auto_stop_machines = 'suspend'` + `min_machines_running = 0` 조합으로 매 요청 cold start가 발생, 안정성이 떨어졌음.
+
+### 변경
+
+- `lib/mcp/client.ts`: `MCP_BASE_URL` 환경변수 우선 사용, 미설정 시 fly.dev fallback. URL 생성을 템플릿 문자열에서 URL API 기반으로 정리해 OC 키에 특수문자가 들어가도 안전.
+  ```ts
+  const baseUrl = process.env.MCP_BASE_URL || DEFAULT_MCP_BASE_URL;
+  const url = new URL('/mcp', baseUrl);
+  url.searchParams.set('oc', ocKey);
+  ```
+- `tests/lib/mcp/client.test.ts`: transport 생성자에 전달되는 URL을 캡처해 (1) 미설정 시 fly.dev (2) 설정 시 해당 host 두 케이스 검증. 총 8 → 10 테스트.
+- `README.md` / `CONTRIBUTING.md`: `MCP_BASE_URL` 항목 추가, 아키텍처 다이어그램의 외부 서비스 라인을 호스트-비종속 표현으로 변경.
+
+### 자체 호스팅 (Hugging Face Spaces)
+
+`chrisryugj/korean-law-mcp`(MIT) 컨테이너를 `csk917/korean-law-mcp` Space로 미러:
+
+1. clone → README 최상단에 HF frontmatter 추가 (`sdk: docker`, `app_port: 3000`).
+2. `hf repos create csk917/korean-law-mcp --type space --space-sdk docker`.
+3. `git push hfspace main` 시도 → HF git endpoint에서 `expected 'acknowledgments'` 프로토콜 오류. git 2.39.1과 HF 측 git 서버 호환 이슈로 추정.
+4. 우회: `huggingface_hub.HfApi.upload_folder()` HTTP API 사용 → 정상 업로드.
+5. 빌드 BUILDING → RUNNING, `GET /health` 200 OK 확인.
+
+### Vercel 환경변수 설정
+
+`vercel link --yes` → `agentic-era/ai-law-counsel`로 연결. 세 환경 모두 `MCP_BASE_URL=https://csk917-korean-law-mcp.hf.space` 등록:
+
+```bash
+printf 'https://csk917-korean-law-mcp.hf.space' | vercel env add MCP_BASE_URL production
+printf 'https://csk917-korean-law-mcp.hf.space' | vercel env add MCP_BASE_URL preview
+printf 'https://csk917-korean-law-mcp.hf.space' | vercel env add MCP_BASE_URL development
+```
+
+### 롤백 방법
+
+장애 시 Vercel 환경변수에서 `MCP_BASE_URL`만 제거하면 코드 변경 없이 즉시 fly.dev로 복귀.
+
+### 검증
+
+- 단위 테스트: `npx vitest run tests/lib/mcp/client.test.ts` → 10 passed
+- 타입 체크: `npx tsc --noEmit` → no errors
+- HF Space `/health`: 200 OK
+- `vercel env ls | grep MCP` → 세 환경 모두 Encrypted로 등록 확인
+
+---
+
 ## Hugging Face Space sleep 방지용 GitHub Actions 추가
 
 - 파일: `.github/workflows/keep-hf-space-awake.yml`
