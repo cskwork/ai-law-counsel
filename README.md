@@ -19,7 +19,7 @@ Ask any legal question in Korean. The AI searches relevant statutes, precedents,
 ### Core Q&A
 - **Real-time legal search** -- statutes, precedents, and administrative rules via National Law Information Center
 - **Autonomous function calling** -- LLM picks and chains tools (up to 5 rounds) without manual tool selection
-- **MCP integration** -- legal tools served by [korean-law-mcp](https://korean-law-mcp.fly.dev) (Model Context Protocol)
+- **MCP integration** -- legal tools served by [korean-law-mcp](https://github.com/chrisryugj/korean-law-mcp) (Model Context Protocol). Host is configurable via `MCP_BASE_URL` (defaults to `https://korean-law-mcp.fly.dev`; production uses self-hosted HF Space `https://csk917-korean-law-mcp.hf.space`).
 - **SSE streaming** -- token-by-token response for natural reading
 - **Conversation history** -- persisted in browser, sidebar navigation, context windowing (last 10 turns)
 
@@ -111,7 +111,7 @@ Next.js on Vercel
     |
 External Services
     +-- Z.ai GLM (api.z.ai)                LLM (reasoning + function calling)
-    +-- korean-law-mcp.fly.dev             MCP server for legal tools
+    +-- korean-law-mcp                     MCP server for legal tools (host via MCP_BASE_URL)
     +-- open.law.go.kr                     Statutes, precedents, admin rules
 ```
 
