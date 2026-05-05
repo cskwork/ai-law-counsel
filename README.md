@@ -141,6 +141,10 @@ tests/                        58 test cases (Vitest)
 
 > This service provides AI-generated legal information, not legal advice. Always consult a licensed attorney for specific legal matters.
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding style, and PR guidelines.
+
 ## License
 
-MIT
+[MIT License](LICENSE) © 2026 cskwork
