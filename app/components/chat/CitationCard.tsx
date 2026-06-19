@@ -116,6 +116,9 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
 
           {data && !loading && (
             <span className="block space-y-2">
+              <span className="block rounded-md border border-border-subtle bg-surface-sunken px-2 py-1 text-xs text-ink-tertiary">
+                AI 요약과 아래 공식 원문을 직접 대조하세요.
+              </span>
               <span className="block font-display font-semibold text-ink-primary">
                 {data.name}
                 {articleLabel && ` ${articleLabel}`}
@@ -143,7 +146,21 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
                     검증됨
                   </span>
                 ) : (
-                  <span className="text-xs text-status-warning">검증 대기 중</span>
+                  <span
+                    className="flex items-center gap-1 text-xs text-status-warning"
+                    title="공식 원문과 자동 대조가 아직 완료되지 않았습니다. 아래 원문을 직접 확인하세요."
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 16 16"
+                      fill="currentColor"
+                      className="h-3 w-3"
+                      aria-hidden="true"
+                    >
+                      <path fillRule="evenodd" d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 5a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 8 5Zm0 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                    </svg>
+                    검증 대기 중
+                  </span>
                 )}
               </span>
             </span>

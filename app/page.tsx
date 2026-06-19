@@ -90,6 +90,7 @@ export default function Home() {
                 onClick={handleToggleSidebar}
                 className="absolute left-0 rounded-lg p-2 text-ink-tertiary transition-colors hover:bg-surface-elevated hover:text-ink-secondary"
                 title="대화 목록"
+                aria-label="대화 목록 열기/닫기"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -113,6 +114,7 @@ export default function Home() {
                   disabled={!canDecrease}
                   className="rounded-md px-1.5 py-1 text-xs font-medium text-ink-tertiary transition-colors hover:bg-surface-elevated hover:text-ink-secondary disabled:opacity-30 disabled:cursor-not-allowed"
                   title="글자 크기 줄이기"
+                  aria-label="글자 크기 줄이기"
                 >
                   A-
                 </button>
@@ -121,6 +123,7 @@ export default function Home() {
                   disabled={!canIncrease}
                   className="rounded-md px-1.5 py-1 text-sm font-medium text-ink-tertiary transition-colors hover:bg-surface-elevated hover:text-ink-secondary disabled:opacity-30 disabled:cursor-not-allowed"
                   title="글자 크기 키우기"
+                  aria-label="글자 크기 키우기"
                 >
                   A+
                 </button>

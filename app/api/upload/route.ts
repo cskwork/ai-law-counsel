@@ -1,5 +1,5 @@
 import { validateFile } from '@/lib/document/validator';
-import { extractFromTxt, extractFromPdf, extractFromDocx } from '@/lib/document/extractor';
+import { extractFromTxt, extractFromPdf, extractFromDocx, applyTextLimit } from '@/lib/document/extractor';
 import { MAX_EXTRACTED_TEXT_LENGTH } from '@/lib/constants';
 
 /** 파일명에서 확장자 추출 */
@@ -37,22 +37,21 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileType = getFileType(fileName) as 'pdf' | 'docx' | 'txt';
 
-    let extractedText: string;
+    let rawText: string;
     if (fileType === 'txt') {
-      extractedText = extractFromTxt(buffer);
+      rawText = extractFromTxt(buffer);
     } else if (fileType === 'pdf') {
       const pdfParseModule = await import('pdf-parse');
       const pdfParse = (pdfParseModule as unknown as { default: (buf: Buffer) => Promise<{ text: string }> }).default ?? pdfParseModule;
-      extractedText = await extractFromPdf(buffer, { pdfParse: pdfParse as (buf: Buffer) => Promise<{ text: string }> });
+      rawText = await extractFromPdf(buffer, { pdfParse: pdfParse as (buf: Buffer) => Promise<{ text: string }> });
     } else {
       const mammoth = await import('mammoth');
-      extractedText = await extractFromDocx(buffer, { mammoth });
+      rawText = await extractFromDocx(buffer, { mammoth });
     }
 
-    // 텍스트 길이 제한
-    if (extractedText.length > MAX_EXTRACTED_TEXT_LENGTH) {
-      extractedText = extractedText.slice(0, MAX_EXTRACTED_TEXT_LENGTH);
-    }
+    // 텍스트 길이 제한 (LLM 컨텍스트 보호) + 절단 메타데이터 산출 (공유 헬퍼)
+    const { text: extractedText, truncated, originalLength: originalTextLength } =
+      applyTextLimit(rawText, MAX_EXTRACTED_TEXT_LENGTH);
 
     return Response.json({
       success: true,
@@ -62,6 +61,8 @@ export async function POST(request: Request) {
         fileSize,
         extractedText,
         extractedTextLength: extractedText.length,
+        truncated,
+        originalTextLength,
       },
     });
   } catch (error) {

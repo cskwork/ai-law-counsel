@@ -69,7 +69,7 @@ export async function GET(request: Request) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error('[citation] 설정 오류:', detail);
     return Response.json(
-      { success: false, error: '인용 조회 설정이 올바르지 않습니다.', detail },
+      { success: false, error: '인용 조회 설정이 올바르지 않습니다.' },
       { status: 503 },
     );
   }
@@ -185,7 +185,7 @@ export async function GET(request: Request) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error('[citation] 조회 실패:', detail);
     return Response.json(
-      { success: false, error: '국가법령정보센터에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.', detail },
+      { success: false, error: '국가법령정보센터에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' },
       { status: 503 },
     );
   }

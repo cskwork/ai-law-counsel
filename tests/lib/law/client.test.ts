@@ -137,4 +137,58 @@ describe('LawApiClient', () => {
       });
     });
   });
+
+  describe('fetchAndParse 재시도 정책', () => {
+    it('4xx 응답은 재시도하지 않고 즉시 throw해야 한다', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(client.fetchAndParse('https://example.com')).rejects.toThrow('404');
+      // 단 1회만 호출되어야 함(재시도 금지)
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('5xx 응답은 최대 2회까지 재시도해야 한다', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(client.fetchAndParse('https://example.com')).rejects.toThrow('503');
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('네트워크 오류는 재시도하고, 두 번째 시도가 성공하면 결과를 반환해야 한다', async () => {
+      const xmlResponse = '<root><item>ok</item></root>';
+      const fetchMock = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({
+          ok: true,
+          text: () => Promise.resolve(xmlResponse),
+        });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const result = await client.fetchAndParse('https://example.com');
+
+      expect(result).toEqual({ root: { item: 'ok' } });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('AbortError(타임아웃)는 재시도 대상이어야 한다', async () => {
+      const abortError = new Error('The operation was aborted');
+      abortError.name = 'AbortError';
+      const fetchMock = vi.fn().mockRejectedValue(abortError);
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(client.fetchAndParse('https://example.com')).rejects.toThrow();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+  });
 });
