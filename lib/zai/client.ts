@@ -1,6 +1,6 @@
 /**
  * Z.ai LLM 클라이언트
- * - GLM-4.7 모델과 통신하는 HTTP 클라이언트
+ * - GLM-5.2 모델과 통신하는 HTTP 클라이언트
  * - 일반 채팅, 도구 사용 채팅, 스트리밍 지원
  */
 import type {
@@ -14,7 +14,7 @@ import type {
 const API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
 
 /** 사용 모델 */
-const MODEL = 'glm-5-turbo';
+const MODEL = 'glm-5.2';
 
 export class ZaiClient {
   private readonly apiKey: string;
