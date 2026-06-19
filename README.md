@@ -75,7 +75,7 @@ The LLM decides which laws and precedents to search based on the user's question
 | Framework | Next.js 14 (App Router) |
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS 3 + @tailwindcss/typography |
-| LLM | Z.ai `glm-5-turbo` (function calling + SSE streaming) |
+| LLM | Z.ai `glm-5.2` (function calling + SSE streaming) |
 | Legal Tools | korean-law-mcp (Streamable HTTP transport) |
 | Legal Data | Korean National Law Information Center Open API |
 | Doc Parsing | pdf-parse, mammoth |
