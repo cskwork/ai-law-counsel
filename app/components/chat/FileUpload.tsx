@@ -3,13 +3,17 @@
 import { useState, useCallback, useRef } from 'react';
 import { MAX_FILE_SIZE, SUPPORTED_FILE_TYPES } from '@/lib/constants';
 
-/** 업로드 결과 데이터 */
+/** 업로드 결과 데이터 (upload API의 data를 그대로 전달받음) */
 export interface UploadResult {
   fileName: string;
   fileType: string;
   fileSize: number;
   extractedText: string;
   extractedTextLength: number;
+  /** 긴 문서가 maxLength로 잘렸는지 여부 (Unit 1 upload 응답) */
+  truncated?: boolean;
+  /** 잘리기 전 원본 텍스트 길이 (Unit 1 upload 응답) */
+  originalTextLength?: number;
 }
 
 interface FileUploadProps {
@@ -103,13 +107,32 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
     setDragOver(false);
   }, []);
 
+  // 드롭존 열기 (클릭/키보드 공용)
+  const openFileDialog = useCallback(() => {
+    if (disabled || uploading) return;
+    inputRef.current?.click();
+  }, [disabled, uploading]);
+
+  // Enter/Space로 파일 선택 트리거 (버튼 동작 모사)
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openFileDialog();
+    }
+  }, [openFileDialog]);
+
   return (
     <div className="flex flex-col gap-2">
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="문서 업로드: PDF, DOCX, TXT 파일을 끌어놓거나 클릭 또는 Enter 키로 선택하세요"
+        aria-busy={uploading}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onClick={() => !disabled && !uploading && inputRef.current?.click()}
+        onClick={openFileDialog}
+        onKeyDown={handleKeyDown}
         className={`
           flex items-center justify-center rounded-lg border-2 border-dashed px-4 py-3 text-sm transition-colors cursor-pointer
           ${dragOver

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { extractFromPdf, extractFromDocx, extractFromTxt, extractText } from '@/lib/document/extractor';
+import {
+  extractFromPdf,
+  extractFromDocx,
+  extractFromTxt,
+  extractText,
+  extractTextWithMeta,
+} from '@/lib/document/extractor';
 
 describe('문서 추출기', () => {
   describe('extractFromPdf', () => {
@@ -97,6 +103,58 @@ describe('문서 추출기', () => {
       await expect(
         extractText(Buffer.from(''), 'xlsx' as 'pdf', mockDeps)
       ).rejects.toThrow('지원하지 않는 파일 형식');
+    });
+  });
+
+  describe('extractTextWithMeta', () => {
+    const baseDeps = {
+      pdfParse: vi.fn().mockResolvedValue({ text: 'pdf content' }),
+      mammoth: {
+        extractRawText: vi.fn().mockResolvedValue({ value: 'docx content' }),
+      },
+    };
+
+    it('maxLength 이내면 절단하지 않고 truncated=false를 반환해야 한다', async () => {
+      const buffer = Buffer.from('짧은 텍스트');
+      const result = await extractTextWithMeta(buffer, 'txt', baseDeps, 100);
+
+      expect(result.text).toBe('짧은 텍스트');
+      expect(result.truncated).toBe(false);
+      expect(result.originalLength).toBe('짧은 텍스트'.length);
+      expect(result.usedLength).toBe('짧은 텍스트'.length);
+    });
+
+    it('maxLength를 초과하면 앞부분만 자르고 truncated=true를 반환해야 한다', async () => {
+      const long = 'a'.repeat(120);
+      const buffer = Buffer.from(long);
+      const result = await extractTextWithMeta(buffer, 'txt', baseDeps, 50);
+
+      expect(result.text).toBe('a'.repeat(50));
+      expect(result.truncated).toBe(true);
+      expect(result.originalLength).toBe(120);
+      expect(result.usedLength).toBe(50);
+    });
+
+    it('길이가 maxLength와 정확히 같으면 truncated=false여야 한다', async () => {
+      const exact = 'b'.repeat(50);
+      const buffer = Buffer.from(exact);
+      const result = await extractTextWithMeta(buffer, 'txt', baseDeps, 50);
+
+      expect(result.truncated).toBe(false);
+      expect(result.originalLength).toBe(50);
+      expect(result.usedLength).toBe(50);
+    });
+
+    it('PDF 추출 결과에도 메타데이터를 산출해야 한다', async () => {
+      const deps = {
+        pdfParse: vi.fn().mockResolvedValue({ text: 'c'.repeat(80) }),
+        mammoth: baseDeps.mammoth,
+      };
+      const result = await extractTextWithMeta(Buffer.from('pdf'), 'pdf', deps, 30);
+
+      expect(result.text.length).toBe(30);
+      expect(result.truncated).toBe(true);
+      expect(result.originalLength).toBe(80);
     });
   });
 });

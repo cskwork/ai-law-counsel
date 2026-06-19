@@ -18,7 +18,7 @@ Ask any legal question in Korean. The AI searches relevant statutes, precedents,
 
 ### Core Q&A
 - **Real-time legal search** -- statutes, precedents, and administrative rules via National Law Information Center
-- **Autonomous function calling** -- LLM picks and chains tools (up to 5 rounds) without manual tool selection
+- **Autonomous function calling** -- LLM picks and chains tools (up to 10 rounds) without manual tool selection
 - **MCP integration** -- legal tools served by [korean-law-mcp](https://github.com/chrisryugj/korean-law-mcp) (Model Context Protocol). Host is configurable via `MCP_BASE_URL` (defaults to `https://korean-law-mcp.fly.dev`; production uses self-hosted HF Space `https://csk917-korean-law-mcp.hf.space`).
 - **SSE streaming** -- token-by-token response for natural reading
 - **Conversation history** -- persisted in browser, sidebar navigation, context windowing (last 10 turns)
@@ -55,7 +55,7 @@ User asks a legal question
         |
    LLM analyzes the question
         |
-   Calls MCP tools automatically (up to 5 rounds)
+   Calls MCP tools automatically (up to 10 rounds)
    - search_law          : Search statutes by keyword
    - get_law_detail      : Get specific articles
    - search_precedent    : Search court cases
@@ -96,7 +96,7 @@ Next.js on Vercel
     +-- app/api/upload/route.ts     File upload + text extraction
     +-- app/api/citation/route.ts   On-click citation lookup
     |
-    +-- lib/chat/orchestrator.ts    Function calling loop (max 5 rounds)
+    +-- lib/chat/orchestrator.ts    Function calling loop (max 10 rounds)
     +-- lib/chat/tool-executor.ts   Tool name -> function dispatch
     +-- lib/chat/context-window.ts  Last-10-turn windowing
     +-- lib/chat/template-types.ts  5 legal document templates
@@ -201,7 +201,7 @@ tests/                           Vitest + Playwright (223 cases, 31 files)
 - Max upload size: 4.5 MB (Vercel payload limit)
 - Supported file types: `pdf`, `docx`, `txt`
 - Max extracted text per upload: 50,000 characters (LLM context guard)
-- Max tool-calling rounds per response: 5
+- Max tool-calling rounds per response: 10
 
 ## Disclaimer
 
