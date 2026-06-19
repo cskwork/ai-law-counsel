@@ -28,6 +28,15 @@
 - 0개 신규 prod 의존성. 기존 스택만 사용.
 - 배포: feature 브랜치 → `npm run build`/test 게이트 → `vercel --prod`.
 
+## Outcome
+
+- 게이트 전부 통과: `tsc` 0 / `lint` 0 / `test:run` 224 통과 / `build` 무경고.
+- 리뷰 패널(security/typescript/code-quality) 전원 approved, CRITICAL/HIGH 0. MEDIUM 권고 4건 반영(DRY 헬퍼, onSend 타입, 재시도 상한, citation detail 제거).
+- 배포: `vercel --prod` → Production `https://ai-law-counsel.vercel.app` (별칭), 빌드 `https://ai-law-counsel-likmyjjpz-agentic-era.vercel.app`.
+- 라이브 검증: 홈 200, `/api/citation`(파라미터 누락) 400, 배포 JS 번들에 신규 기능 문자열 확인(대한법률구조공단/132/여성긴급전화/다시 시도/문서가 길어/원문을 직접 대조). `위험도 높음`은 서버 측 시스템 프롬프트라 클라이언트 번들에 부재(정상).
+
 ## Escalations / Notes
 
-(작성 중 — 게이트 실패·서킷브레이커 발생 시 여기 기록)
+- 서킷브레이커/게이트 실패 없음.
+- main을 배포본과 동기화(ff merge + push) — Vercel GitHub 통합이 추후 main 푸시 시 프로덕션을 되돌리는 것을 방지하기 위함.
+- deferred(LOW): SSE 'error' 직후 'done' 도착 시 대화 저장 가드 — 현재 서버는 해당 순서를 보내지 않아 영향 없음. 추후 가드 추가 권장.
