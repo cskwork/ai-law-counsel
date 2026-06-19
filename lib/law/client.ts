@@ -22,6 +22,23 @@ const BASE_URL = 'https://www.law.go.kr/DRF';
 const SEARCH_ENDPOINT = `${BASE_URL}/lawSearch.do`;
 const DETAIL_ENDPOINT = `${BASE_URL}/lawService.do`;
 const TIMEOUT_MS = 10_000;
+const MAX_ATTEMPTS = 2;
+const RETRY_BACKOFF_MS = 300;
+
+/** 재시도하면 안 되는 오류(예: 4xx 클라이언트 오류)를 표시하는 래퍼 */
+class NonRetryableError extends Error {
+  readonly cause: Error;
+  constructor(cause: Error) {
+    super(cause.message);
+    this.name = 'NonRetryableError';
+    this.cause = cause;
+  }
+}
+
+/** 지정 시간 대기 (재시도 백오프용) */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * 국가법령정보센터 API 클라이언트
@@ -81,11 +98,15 @@ export class LawApiClient {
     return this.parser.parse(xml) as Record<string, unknown>;
   }
 
-  /** URL에서 XML을 가져와 파싱 (타임아웃 포함) */
+  /**
+   * URL에서 XML을 가져와 파싱 (타임아웃 + 재시도 포함)
+   * 4xx(클라이언트 오류)는 재시도하지 않고 즉시 throw,
+   * 네트워크 오류/타임아웃(AbortError)/5xx만 최대 2시도, 시도 간 300ms 백오프
+   */
   async fetchAndParse(url: string): Promise<Record<string, unknown>> {
     let lastError: unknown;
 
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -98,15 +119,30 @@ export class LawApiClient {
         });
 
         if (!response.ok) {
-          throw new Error(`API 요청 실패: ${response.status} ${response.statusText}`);
+          const error = new Error(`API 요청 실패: ${response.status} ${response.statusText}`);
+          // 4xx는 재요청해도 동일하게 실패하므로 재시도하지 않음
+          if (response.status >= 400 && response.status < 500) {
+            throw new NonRetryableError(error);
+          }
+          lastError = error;
+        } else {
+          const xml = await response.text();
+          return this.parseXml(xml);
         }
-
-        const xml = await response.text();
-        return this.parseXml(xml);
       } catch (error) {
+        // 4xx는 즉시 원본 오류로 throw하여 루프를 빠져나간다(재시도 금지)
+        if (error instanceof NonRetryableError) {
+          throw error.cause;
+        }
+        // 네트워크 오류/AbortError(타임아웃)/5xx만 이 경로로 들어와 재시도 대상이 됨
         lastError = error;
       } finally {
         clearTimeout(timeoutId);
+      }
+
+      // 마지막 시도가 아니면 백오프 후 재시도
+      if (attempt < MAX_ATTEMPTS - 1) {
+        await delay(RETRY_BACKOFF_MS);
       }
     }
 

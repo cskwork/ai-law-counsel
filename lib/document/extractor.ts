@@ -85,3 +85,46 @@ export async function extractText(
       throw new Error(`지원하지 않는 파일 형식: ${fileType}`);
   }
 }
+
+/** 추출 결과 메타데이터 (절단 여부 포함) */
+export interface ExtractedTextMeta {
+  /** 길이 제한 적용 후 텍스트 */
+  readonly text: string;
+  /** 원본이 maxLength를 초과해 절단되었는지 여부 */
+  readonly truncated: boolean;
+  /** 절단 전 원본 텍스트 길이 */
+  readonly originalLength: number;
+  /** 실제 사용된(반환된) 텍스트 길이 */
+  readonly usedLength: number;
+}
+
+/**
+ * rawText에 maxLength를 적용해 절단 메타데이터를 산출 (순수 함수)
+ * 절단 규칙을 한 곳에서 관리 -- extractTextWithMeta와 upload 라우트가 공유
+ */
+export function applyTextLimit(rawText: string, maxLength: number): ExtractedTextMeta {
+  const originalLength = rawText.length;
+  const text = originalLength > maxLength ? rawText.slice(0, maxLength) : rawText;
+  const usedLength = text.length;
+
+  return {
+    text,
+    truncated: originalLength > usedLength,
+    originalLength,
+    usedLength,
+  };
+}
+
+/**
+ * 텍스트를 추출하고 maxLength 적용 결과를 메타데이터와 함께 반환
+ * 원본 길이가 사용 길이보다 크면 truncated=true
+ */
+export async function extractTextWithMeta(
+  buffer: Buffer,
+  fileType: 'pdf' | 'docx' | 'txt',
+  deps: ExtractorDeps,
+  maxLength: number,
+): Promise<ExtractedTextMeta> {
+  const full = await extractText(buffer, fileType, deps);
+  return applyTextLimit(full, maxLength);
+}
