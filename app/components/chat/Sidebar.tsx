@@ -1,13 +1,17 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import type { StoredConversation } from '@/app/types/conversation';
+import { filterConversations } from '@/lib/chat/filter-conversations';
 
 interface SidebarProps {
   conversations: StoredConversation[];
   activeId: string | null;
   isOpen: boolean;
-  onToggle: () => void;
+  /** 답변 생성 중에는 전환·새 채팅을 막음 */
+  disabled?: boolean;
+  onClose: () => void;
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
@@ -30,164 +34,236 @@ function formatRelativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ko-KR');
 }
 
-// 토글 접이식 사이드바 (대화 히스토리)
+const TRASH_PATH =
+  'M6.5 2.5h3M3 4.5h10M4.5 4.5l.6 8.4c.05.6.55 1.1 1.15 1.1h3.5c.6 0 1.1-.5 1.15-1.1l.6-8.4M6.75 7v4.5M9.25 7v4.5';
+
+// 접수 기록 서랍 (대화 히스토리: 검색 + 안전한 삭제)
 export function Sidebar({
   conversations,
   activeId,
   isOpen,
-  onToggle,
+  disabled = false,
+  onClose,
   onSelect,
   onNew,
   onDelete,
   onDeleteAll,
 }: SidebarProps) {
-  const handleDelete = useCallback(
-    (e: React.MouseEvent, id: string) => {
-      e.stopPropagation();
-      onDelete(id);
-    },
-    [onDelete]
-  );
+  const [query, setQuery] = useState('');
+  const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const handleDeleteAll = useCallback(() => {
-    if (conversations.length === 0) return;
+  const visible = useMemo(() => filterConversations(conversations, query), [conversations, query]);
+
+  // 열릴 때 검색창 포커스, 닫힐 때 확인 상태 초기화
+  useEffect(() => {
+    if (isOpen) {
+      searchRef.current?.focus({ preventScroll: true });
+    } else {
+      setConfirmingDeleteAll(false);
+    }
+  }, [isOpen]);
+
+  // Escape로 닫기
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isOpen, onClose]);
+
+  const handleConfirmDeleteAll = useCallback(() => {
     onDeleteAll();
-  }, [conversations.length, onDeleteAll]);
+    setConfirmingDeleteAll(false);
+    setQuery('');
+  }, [onDeleteAll]);
 
   return (
     <>
-      {/* 배경 딤 (남색 틴트) */}
+      {/* 배경 딤 */}
       <div
-        className={`
-          fixed inset-0 z-30 transition-opacity duration-300
-          ${isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}
-        `}
-        style={{ backgroundColor: 'rgba(27, 42, 74, 0.4)' }}
-        onClick={onToggle}
+        aria-hidden="true"
+        className={`fixed inset-0 z-30 bg-ink/40 transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={onClose}
       />
 
-      {/* 사이드바 패널 */}
       <aside
-        className={`
-          fixed inset-y-0 left-0 z-40 w-72 bg-surface-elevated border-r border-border-default
-          flex flex-col transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
+        id="conversation-drawer"
+        aria-label="대화 목록"
+        className={`fixed inset-y-0 left-0 z-40 flex w-[min(20rem,88vw)] flex-col bg-ground shadow-lift transition-[transform,visibility] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isOpen ? 'visible translate-x-0' : 'invisible -translate-x-full'
+        }`}
       >
         {/* 상단: 새 채팅 + 닫기 */}
-        <div className="flex items-center justify-between border-b border-border-default px-3 py-3">
+        <div className="flex items-center justify-between gap-2 bg-sign px-3 py-2.5 text-sign-ink">
           <button
+            type="button"
             onClick={onNew}
-            className="flex items-center gap-2 rounded-lg bg-authority-deep px-3 py-2 text-sm font-medium text-ink-inverse transition-colors hover:bg-authority-mid"
+            disabled={disabled}
+            className="flex h-9 items-center gap-2 rounded-[3px] bg-sign-ink px-3 font-sign text-sm font-bold text-sign transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-4 w-4 text-accent-gold"
-            >
-              <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5" aria-hidden="true">
+              <path strokeLinecap="round" d="M8 3v10M3 8h10" />
             </svg>
             새 채팅
           </button>
           <button
-            onClick={onToggle}
-            className="rounded-lg p-2 text-ink-tertiary transition-colors hover:bg-surface-sunken hover:text-ink-secondary"
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 place-items-center rounded-[3px] text-sign-ink-2 transition-colors hover:bg-sign-ink/10 hover:text-sign-ink"
             title="사이드바 닫기"
+            aria-label="대화 목록 닫기"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-4 w-4"
-            >
-              <path
-                fillRule="evenodd"
-                d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
-                clipRule="evenodd"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4" aria-hidden="true">
+              <path strokeLinecap="round" d="M4 4l8 8M12 4l-8 8" />
             </svg>
           </button>
         </div>
 
-        {/* 대화 목록 */}
-        <div className="px-3 pt-3 pb-1">
-          <p className="font-display text-[11px] font-semibold uppercase tracking-wider text-ink-tertiary">
+        {/* 제목 + 검색 */}
+        <div className="border-b border-rule px-3 pb-3 pt-3.5">
+          <h2 className="mb-2 flex items-baseline justify-between font-sign text-sm font-extrabold text-ink">
             대화 목록
-          </p>
+            <span className="tabular font-body text-xs font-normal text-ink-3">{conversations.length}건</span>
+          </h2>
+          <label htmlFor="conversation-search" className="sr-only">대화 검색</label>
+          <div className="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-3" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.25" />
+              <path strokeLinecap="round" d="m10.25 10.25 3 3" />
+            </svg>
+            <input
+              ref={searchRef}
+              id="conversation-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="대화 검색"
+              autoComplete="off"
+              className="h-9 w-full rounded-[3px] border border-rule-strong bg-paper pl-8 pr-8 text-sm text-ink placeholder:text-ink-3 focus:border-sign focus:outline-none focus:ring-2 focus:ring-sign/25"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-1 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-[3px] text-ink-3 hover:text-ink"
+                aria-label="검색어 지우기"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-3 w-3" aria-hidden="true">
+                  <path strokeLinecap="round" d="M4 4l8 8M12 4l-8 8" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
-        <nav className="flex-1 overflow-y-auto scrollbar-thin px-2 py-1">
+
+        {/* 대화 목록 */}
+        <nav aria-label="저장된 대화" className="min-h-0 flex-1 overflow-y-auto px-2 py-2 scrollbar-thin">
           {conversations.length === 0 ? (
-            <p className="px-3 py-8 text-center text-xs text-ink-tertiary">
-              대화 기록이 없습니다
+            <div className="flex flex-col items-center px-4 py-8 text-center">
+              <Image
+                src="/images/empty-history.webp"
+                unoptimized
+                width={160}
+                height={160}
+                alt=""
+                className="mb-3 h-28 w-28 rounded-[4px] opacity-90"
+              />
+              <p className="text-sm font-medium text-ink">대화 기록이 없습니다</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink-3">질문을 접수하면 이 기기에만 저장됩니다.</p>
+            </div>
+          ) : visible.length === 0 ? (
+            <p className="px-3 py-8 text-center text-sm text-ink-3" role="status">
+              &ldquo;{query.trim()}&rdquo;에 맞는 대화가 없습니다
             </p>
           ) : (
-            <ul className="space-y-0.5">
-              {conversations.map((conv) => (
-                <li key={conv.id}>
-                  <button
-                    onClick={() => onSelect(conv.id)}
-                    className={`
-                      group/item flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left transition-colors
-                      ${
-                        activeId === conv.id
-                          ? 'border-l-[3px] border-accent-gold bg-surface-sunken text-ink-primary'
-                          : 'border-l-[3px] border-transparent text-ink-secondary hover:bg-surface-sunken hover:text-ink-primary'
-                      }
-                    `}
+            <ul className="space-y-1">
+              {visible.map((conv) => {
+                const active = activeId === conv.id;
+                return (
+                  <li
+                    key={conv.id}
+                    className={`group flex items-stretch rounded-[3px] transition-colors ${
+                      active ? 'bg-paper shadow-paper' : 'hover:bg-paper/70'
+                    }`}
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{conv.title}</p>
-                      <p className="mt-0.5 text-xs text-ink-tertiary">
-                        {formatRelativeTime(conv.updatedAt)}
-                      </p>
-                    </div>
                     <button
-                      onClick={(e) => handleDelete(e, conv.id)}
-                      className="ml-2 shrink-0 rounded-md p-1 text-ink-tertiary opacity-0 transition-all hover:bg-status-error-bg hover:text-status-error group-hover/item:opacity-100"
-                      title="삭제"
+                      type="button"
+                      onClick={() => onSelect(conv.id)}
+                      disabled={disabled && !active}
+                      aria-current={active ? 'true' : undefined}
+                      className="min-w-0 flex-1 px-3.5 py-2.5 text-left disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-3.5 w-3.5"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 1 .7.798l-.5 5.5a.75.75 0 0 1-1.498-.136l.5-5.5a.75.75 0 0 1 .798-.662Zm2.84 0a.75.75 0 0 1 .798.662l.5 5.5a.75.75 0 1 1-1.498.136l-.5-5.5a.75.75 0 0 1 .7-.798Z"
-                          clipRule="evenodd"
-                        />
+                      <span className={`block truncate text-sm ${active ? 'font-bold text-ink' : 'font-medium text-ink-2'}`}>
+                        {conv.title}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-ink-3">
+                        {formatRelativeTime(conv.updatedAt)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(conv.id)}
+                      disabled={disabled && active}
+                      className="mr-1 grid w-8 shrink-0 place-items-center self-center rounded-[3px] py-1.5 text-ink-3 transition-[opacity,color,background-color] hover:bg-error-tint hover:text-error focus-visible:opacity-100 disabled:hidden [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
+                      title="삭제"
+                      aria-label={`"${conv.title}" 대화 삭제`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" className="h-3.5 w-3.5" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d={TRASH_PATH} />
                       </svg>
                     </button>
-                  </button>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </nav>
 
-        {/* 하단: 전체 삭제 */}
+        {/* 하단: 전체 삭제 (2단계 확인) */}
         {conversations.length > 0 && (
-          <div className="border-t border-border-default px-3 py-3">
-            <button
-              onClick={handleDeleteAll}
-              className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-tertiary transition-colors hover:bg-status-error-bg hover:text-status-error"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="h-3.5 w-3.5"
+          <div className="border-t border-rule px-3 py-3">
+            {confirmingDeleteAll ? (
+              <div role="alertdialog" aria-label="전체 삭제 확인" className="rounded-[3px] border border-error/40 bg-error-tint p-3">
+                <p className="text-xs leading-relaxed text-ink">
+                  저장된 대화 {conversations.length}건을 모두 삭제할까요? 되돌릴 수 없습니다.
+                </p>
+                <div className="mt-2.5 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleConfirmDeleteAll}
+                    disabled={disabled}
+                    className="flex-1 rounded-[3px] bg-error px-3 py-1.5 font-sign text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    모두 삭제
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDeleteAll(false)}
+                    autoFocus
+                    className="flex-1 rounded-[3px] border border-rule-strong bg-paper px-3 py-1.5 text-xs font-medium text-ink hover:bg-paper-2"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmingDeleteAll(true)}
+                disabled={disabled}
+                className="flex w-full items-center justify-center gap-2 rounded-[3px] px-3 py-2 text-xs text-ink-3 transition-colors hover:bg-error-tint hover:text-error disabled:opacity-50"
               >
-                <path
-                  fillRule="evenodd"
-                  d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 1 .7.798l-.5 5.5a.75.75 0 0 1-1.498-.136l.5-5.5a.75.75 0 0 1 .798-.662Zm2.84 0a.75.75 0 0 1 .798.662l.5 5.5a.75.75 0 1 1-1.498.136l-.5-5.5a.75.75 0 0 1 .7-.798Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              전체 삭제
-            </button>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d={TRASH_PATH} />
+                </svg>
+                전체 삭제
+              </button>
+            )}
           </div>
         )}
       </aside>

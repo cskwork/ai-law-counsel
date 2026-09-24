@@ -29,16 +29,18 @@ export function CopyButton({ content }: CopyButtonProps) {
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
-      className="rounded-md p-1.5 text-ink-tertiary transition-colors hover:bg-surface-elevated hover:text-authority-mid"
+      className="grid h-7 w-7 place-items-center rounded-chip text-ink-3 transition-colors hover:bg-paper-2 hover:text-ink"
       title={copied ? '복사됨' : '복사'}
+      aria-label={copied ? '복사됨' : '복사'}
     >
       {copied ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className="h-4 w-4 text-status-success"
+          className="h-4 w-4 text-ok"
         >
           <path
             fillRule="evenodd"

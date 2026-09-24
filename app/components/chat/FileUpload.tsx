@@ -122,23 +122,24 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
   }, [openFileDialog]);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <div
         role="button"
         tabIndex={0}
         aria-label="문서 업로드: PDF, DOCX, TXT 파일을 끌어놓거나 클릭 또는 Enter 키로 선택하세요"
         aria-busy={uploading}
+        aria-disabled={disabled || uploading}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={openFileDialog}
         onKeyDown={handleKeyDown}
         className={`
-          flex items-center justify-center rounded-lg border-2 border-dashed px-4 py-3 text-sm transition-colors cursor-pointer
+          flex min-h-[2.5rem] cursor-pointer items-center justify-center gap-2 rounded-[4px] border border-dashed px-3 py-2 text-[0.8rem] transition-colors
           ${dragOver
-            ? 'border-accent-gold bg-accent-gold-light text-accent-gold-dim'
-            : 'border-border-default bg-surface-sunken text-ink-tertiary hover:border-border-strong hover:bg-surface-elevated'}
-          ${(disabled || uploading) ? 'opacity-50 cursor-not-allowed' : ''}
+            ? 'border-way-law bg-way-law-tint text-ink'
+            : 'border-rule-strong bg-paper-2 text-ink-2 hover:border-ink-3 hover:bg-paper'}
+          ${(disabled || uploading) ? 'cursor-not-allowed opacity-50' : ''}
         `}
       >
         <input
@@ -150,21 +151,26 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
           className="hidden"
         />
         {uploading ? (
-          <span className="flex items-center gap-2 text-ink-secondary">
-            <svg className="h-4 w-4 animate-spin text-accent-gold" viewBox="0 0 24 24" fill="none">
+          <span className="flex items-center gap-2 text-ink">
+            <svg className="h-4 w-4 animate-spin text-sign" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
             문서 분석 중...
           </span>
         ) : (
-          <span>
-            <span className="font-medium text-ink-secondary tracking-wide">PDF, DOCX, TXT</span> 파일을 여기에 끌어놓거나 클릭하세요
-          </span>
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" className="h-4 w-4 shrink-0 text-ink-3" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 10.5V2.5M5 5.5l3-3 3 3M2.5 10v2.25c0 .69.56 1.25 1.25 1.25h8.5c.69 0 1.25-.56 1.25-1.25V10" />
+            </svg>
+            <span className="text-center">
+              <span className="font-sign font-bold tracking-wide text-ink">PDF, DOCX, TXT</span> 파일을 여기에 끌어놓거나 클릭하세요
+            </span>
+          </>
         )}
       </div>
       {error && (
-        <p className="text-xs text-status-error px-1">{error}</p>
+        <p role="alert" className="px-1 text-xs text-error">{error}</p>
       )}
     </div>
   );

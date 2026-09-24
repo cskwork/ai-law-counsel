@@ -5,15 +5,18 @@ interface LawArticleCardProps {
   articleContent: string;
 }
 
-// 법령 조문 카드 (남색 좌측 보더, 세리프 제목)
+// 법령 조문 카드 (법령 안내선 파랑)
 export function LawArticleCard({ lawName, articleNumber, articleTitle, articleContent }: LawArticleCardProps) {
   return (
-    <div className="my-2 border-l-[3px] border-cite-law bg-cite-law-bg p-4">
-      <div className="mb-1 font-display text-[11px] font-semibold uppercase tracking-widest text-cite-law">{lawName}</div>
-      <div className="mb-2 text-sm font-semibold tracking-tight text-ink-primary">
-        <span className="font-mono text-ink-secondary">{articleNumber}</span> {articleTitle}
+    <div className="my-2 rounded-[4px] border border-rule bg-paper p-4 shadow-paper">
+      <div className="mb-1 flex items-center gap-2 text-xs font-medium text-way-law">
+        <span aria-hidden="true" className="h-1.5 w-5 rounded-full bg-way-law" />
+        {lawName}
       </div>
-      <p className="text-sm leading-relaxed text-ink-secondary whitespace-pre-wrap">{articleContent}</p>
+      <div className="mb-2 font-sign text-sm font-bold text-ink">
+        <span className="tabular text-ink-2">{articleNumber}</span> {articleTitle}
+      </div>
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-2">{articleContent}</p>
     </div>
   );
 }
