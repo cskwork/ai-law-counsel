@@ -18,7 +18,7 @@ Ask any legal question in Korean. The AI searches relevant statutes, precedents,
 
 ### Core Q&A
 - **Real-time legal search** -- statutes, precedents, and administrative rules via National Law Information Center
-- **Autonomous function calling** -- LLM picks and chains tools (up to 10 rounds) without manual tool selection
+- **Autonomous function calling** -- LLM picks and chains tools (up to 8 rounds, 150s tool budget) without manual tool selection; if it stops with only a plan or hits a limit, a final no-tool synthesis turn always produces a complete answer
 - **MCP integration** -- legal tools served by [korean-law-mcp](https://github.com/chrisryugj/korean-law-mcp) (Model Context Protocol). Host is configurable via `MCP_BASE_URL` (defaults to `https://korean-law-mcp.fly.dev`; production uses self-hosted HF Space `https://csk917-korean-law-mcp.hf.space`).
 - **SSE streaming** -- token-by-token response for natural reading
 - **Conversation history** -- persisted in browser, sidebar navigation, context windowing (last 10 turns)
@@ -57,9 +57,10 @@ User asks a legal question
         |
    LLM analyzes the question
         |
-   Calls MCP tools automatically (up to 10 rounds)
-   - search_law          : Search statutes by keyword
-   - get_law_detail      : Get specific articles
+   Calls tools automatically (up to 8 rounds)
+   - search_law_articles : Find relevant articles (with text) from a plain-language topic
+   - search_law          : Search statutes by name
+   - get_law_detail      : Get specific articles' full text
    - search_precedent    : Search court cases
    - get_precedent_detail: Get case details
    - search_admin_rule   : Search administrative rules
@@ -98,7 +99,7 @@ Next.js on Vercel
     +-- app/api/upload/route.ts     File upload + text extraction
     +-- app/api/citation/route.ts   On-click citation lookup
     |
-    +-- lib/chat/orchestrator.ts    Function calling loop (max 10 rounds)
+    +-- lib/chat/orchestrator.ts    Function calling loop (max 8 rounds, forced final synthesis)
     +-- lib/chat/tool-executor.ts   Tool name -> function dispatch
     +-- lib/chat/context-window.ts  Last-10-turn windowing
     +-- lib/chat/template-types.ts  5 legal document templates

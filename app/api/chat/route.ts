@@ -6,7 +6,10 @@ import { executeToolCall } from '@/lib/chat/tool-executor';
 import { orchestrateChat } from '@/lib/chat/orchestrator';
 import { validateChatRequest } from '@/lib/chat/request-validation';
 import { createSSEStream } from '@/lib/utils/sse';
-import { parseZaiStream } from '@/lib/utils/zai-stream';
+import { parseZaiStream, parseZaiTurnStream } from '@/lib/utils/zai-stream';
+
+// 도구 조회 여러 번 + 최종 답변 스트리밍까지 한 요청에서 끝나야 한다 (Fluid Compute 기본 상한)
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +40,10 @@ export async function POST(request: NextRequest) {
         zaiStream: async function* (msgs, tools) {
           const streamResponse = await zaiClient.streamChat(msgs, tools);
           yield* parseZaiStream(streamResponse);
+        },
+        zaiStreamTurn: async function* (msgs, tools) {
+          const streamResponse = await zaiClient.streamChat(msgs, tools);
+          yield* parseZaiTurnStream(streamResponse);
         },
         executeTool: (name, args) =>
           executeToolCall(name, args, {

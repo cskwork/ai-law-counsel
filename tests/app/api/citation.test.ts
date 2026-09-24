@@ -5,7 +5,8 @@ vi.mock('@/lib/law/client', () => ({
   createLawApiClient: vi.fn(() => ({})),
 }));
 
-vi.mock('@/lib/law/search-law', () => ({
+vi.mock('@/lib/law/search-law', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/law/search-law')>()),
   searchLaw: vi.fn(),
 }));
 

@@ -5,10 +5,15 @@ export interface SearchParams {
   readonly query: string;
   readonly page?: number;
   readonly display?: number;
+  /** 검색 범위: 1 = 제목(법령명·사건명), 2 = 본문. 생략 시 API 기본값(1) */
+  readonly search?: 1 | 2;
 }
 
-/** API 대상 타입 */
-export type TargetType = 'law' | 'prec' | 'admrul';
+/**
+ * API 대상 타입
+ * - aiSearch: 국가법령정보센터 지능형 검색 (자연어 질의 → 관련 조문)
+ */
+export type TargetType = 'law' | 'prec' | 'admrul' | 'aiSearch';
 
 /** 상세 조회 대상 타입 */
 export type DetailTargetType = 'law' | 'prec';
@@ -53,6 +58,8 @@ export class LawApiClient {
     this.parser = new XMLParser({
       ignoreAttributes: false,
       trimValues: true,
+      // "001872"(법령ID), "0005"(조문번호) 같은 0으로 시작하는 식별자를 숫자로 바꾸지 않는다
+      numberParseOptions: { leadingZeros: false, hex: false },
     });
   }
 
@@ -69,6 +76,9 @@ export class LawApiClient {
     }
     if (params.display !== undefined) {
       url.searchParams.set('display', String(params.display));
+    }
+    if (params.search !== undefined) {
+      url.searchParams.set('search', String(params.search));
     }
 
     return url.toString();
