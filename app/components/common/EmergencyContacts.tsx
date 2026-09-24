@@ -18,30 +18,28 @@ const EMERGENCY_CONTACTS: readonly EmergencyContact[] = [
   { label: '정신건강·자살예방', number: '109', description: '24시간 위기 상담' },
 ];
 
-// 긴급 연락처를 카드 리스트로 렌더 (변호사의 서재 톤)
+// 긴급 창구: 전광판 숫자로 표시한 전화 4종 (tel: 링크)
 export function EmergencyContacts() {
   return (
     <section
       role="region"
       aria-label="긴급 연락처"
-      className="rounded-lg border border-border-subtle bg-surface-elevated p-4 shadow-sm"
+      className="rounded-[4px] bg-paper p-4 shadow-paper"
     >
-      <h2 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold text-ink-primary">
-        <span aria-hidden="true" className="inline-block h-3 w-px bg-accent-gold" />
-        긴급 연락처
-      </h2>
+      <h2 className="font-sign text-[0.95rem] font-extrabold text-ink">긴급 연락처</h2>
+      <p className="mb-3 mt-0.5 text-xs text-ink-3">사람의 도움이 급할 때 바로 전화하세요.</p>
       <ul className="grid grid-cols-2 gap-2">
         {EMERGENCY_CONTACTS.map((contact) => (
           <li key={contact.number}>
             <a
               href={`tel:${contact.number}`}
               aria-label={`${contact.label} ${contact.number} 전화 걸기, ${contact.description}`}
-              className="flex flex-col gap-0.5 rounded-md border border-border-default bg-surface-sunken px-3 py-2 transition-colors hover:border-accent-gold hover:bg-accent-gold-light focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold"
+              className="led-board group flex flex-col gap-1 rounded-[4px] px-3 py-2.5 transition-transform duration-150 hover:-translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-way-law focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
             >
-              <span className="text-xs text-ink-tertiary">{contact.label}</span>
-              <span className="font-display text-base font-semibold tracking-wide text-authority-deep">
+              <span className="led-text tabular text-[1.6rem] leading-none">
                 {contact.number}
               </span>
+              <span className="text-[0.72rem] leading-snug text-[#e4dad4]">{contact.label}</span>
             </a>
           </li>
         ))}

@@ -1,4 +1,8 @@
 import type { Config } from "tailwindcss";
+import typography from "@tailwindcss/typography";
+
+// 민원 창구 토큰: globals.css의 RGB 채널 변수를 참조 (opacity modifier 지원)
+const channel = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 
 const config: Config = {
   content: [
@@ -9,64 +13,44 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['var(--font-display)'],
+        sign: ['var(--font-sign)'],
         body: ['var(--font-body)'],
-        mono: ['var(--font-mono)'],
+        led: ['var(--font-led)'],
       },
       colors: {
-        surface: {
-          ground: 'var(--surface-ground)',
-          primary: 'var(--surface-primary)',
-          elevated: 'var(--surface-elevated)',
-          sunken: 'var(--surface-sunken)',
+        ground: channel('ground'),
+        paper: { DEFAULT: channel('paper'), 2: channel('paper-2') },
+        ink: { DEFAULT: channel('ink'), 2: channel('ink-2'), 3: channel('ink-3') },
+        rule: { DEFAULT: channel('rule'), strong: channel('rule-strong') },
+        sign: {
+          DEFAULT: channel('sign'),
+          hover: channel('sign-hover'),
+          ink: channel('sign-ink'),
+          'ink-2': channel('sign-ink-2'),
         },
-        ink: {
-          primary: 'var(--ink-primary)',
-          secondary: 'var(--ink-secondary)',
-          tertiary: 'var(--ink-tertiary)',
-          inverse: 'var(--ink-inverse)',
+        led: { DEFAULT: channel('led'), ground: channel('led-ground') },
+        way: {
+          law: channel('way-law'),
+          'law-tint': channel('way-law-tint'),
+          precedent: channel('way-precedent'),
+          'precedent-tint': channel('way-precedent-tint'),
+          admin: channel('way-admin'),
+          'admin-ink': channel('way-admin-ink'),
+          'admin-tint': channel('way-admin-tint'),
         },
-        authority: {
-          deep: 'var(--authority-deep)',
-          mid: 'var(--authority-mid)',
-          light: 'var(--authority-light)',
-        },
-        accent: {
-          gold: 'var(--accent-gold)',
-          'gold-light': 'var(--accent-gold-light)',
-          'gold-dim': 'var(--accent-gold-dim)',
-        },
-        status: {
-          success: 'var(--status-success)',
-          'success-bg': 'var(--status-success-bg)',
-          warning: 'var(--status-warning)',
-          'warning-bg': 'var(--status-warning-bg)',
-          error: 'var(--status-error)',
-          'error-bg': 'var(--status-error-bg)',
-          info: 'var(--status-info)',
-          'info-bg': 'var(--status-info-bg)',
-        },
-        cite: {
-          law: 'var(--cite-law)',
-          'law-bg': 'var(--cite-law-bg)',
-          precedent: 'var(--cite-precedent)',
-          'precedent-bg': 'var(--cite-precedent-bg)',
-          admin: 'var(--cite-admin)',
-          'admin-bg': 'var(--cite-admin-bg)',
-        },
-        border: {
-          default: 'var(--border-default)',
-          subtle: 'var(--border-subtle)',
-          strong: 'var(--border-strong)',
-        },
+        ok: channel('ok'),
+        warn: { DEFAULT: channel('warn'), tint: channel('warn-tint') },
+        error: { DEFAULT: channel('error'), tint: channel('error-tint') },
       },
       boxShadow: {
-        sm: 'var(--shadow-sm)',
-        md: 'var(--shadow-md)',
-        lg: 'var(--shadow-lg)',
+        paper: 'var(--shadow-paper)',
+        lift: 'var(--shadow-lift)',
+      },
+      borderRadius: {
+        chip: '3px',
       },
     },
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: [typography],
 };
 export default config;

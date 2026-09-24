@@ -24,7 +24,7 @@ interface MessageListProps {
 
 const SCROLL_THRESHOLD = 100; // 하단에서 100px 이내면 auto-scroll 유지
 
-// 메시지 목록 (스마트 자동 스크롤 + 타이핑 커서)
+// 메시지 목록 (스마트 자동 스크롤 + 접수 번호)
 export function MessageList({ events, isStreaming }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -43,20 +43,26 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
     }
   }, [events]);
 
+  // 사용자 질문마다 접수 번호 부여 (대화 내 순서)
+  let ticketNo = 0;
+  const last = events[events.length - 1];
+
   return (
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6"
+      className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-3 py-6 sm:px-5"
     >
-      <div className="max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto space-y-4">
+      <div className="mx-auto max-w-[48rem] space-y-3">
         {events.map((event) => {
           if (event.type === 'message' && event.role && event.content) {
+            const ticket = event.role === 'user' ? ++ticketNo : undefined;
             return (
               <MessageBubble
                 key={event.id}
                 role={event.role}
                 content={event.content}
+                ticketNo={ticket}
               />
             );
           }
@@ -75,14 +81,10 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
           }
           return null;
         })}
-        {isStreaming && events[events.length - 1]?.type !== 'tool_call' && (
-          <div className="my-3 animate-settle">
-            <div className="border-l-[3px] border-authority-light pl-5 py-2">
-              <div className="flex items-center gap-2">
-                <div className="w-0.5 h-5 bg-accent-gold animate-cursor rounded-full" />
-                <span className="text-xs text-ink-tertiary">답변 작성 중...</span>
-              </div>
-            </div>
+        {isStreaming && last?.type !== 'tool_call' && !(last?.type === 'message' && last.role === 'assistant') && (
+          <div className="flex items-center gap-2.5 py-1 pl-1 text-[0.8rem] text-ink-3 animate-settle">
+            <span aria-hidden="true" className="h-4 w-0.5 rounded-full bg-led animate-caret" />
+            답변 작성 중...
           </div>
         )}
       </div>
