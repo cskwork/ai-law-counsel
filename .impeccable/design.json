@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-24T08:14:49.763190+00:00",
+  "title": "Design System: 법률 상담 AI",
+  "extensions": {
+    "colorMeta": {
+      "counter-sign-green": {
+        "role": "primary",
+        "displayName": "Counter-Sign Green",
+        "canonical": "#0E3B34",
+        "tonalRamp": [
+          "#061b18",
+          "#0a2b26",
+          "#0e3b34",
+          "#144e45",
+          "#2a6b60",
+          "#4f8f84",
+          "#8fbdb3",
+          "#d6ebe6"
+        ]
+      },
+      "led-red": {
+        "role": "secondary",
+        "displayName": "LED Red",
+        "canonical": "#FF5333",
+        "tonalRamp": [
+          "#5c261c",
+          "#8a2f1f",
+          "#c23b22",
+          "#ff5333",
+          "#ff7a60",
+          "#ffa08c",
+          "#ffc7bb",
+          "#ffe9e4"
+        ]
+      },
+      "wayline-law-blue": {
+        "role": "tertiary",
+        "displayName": "Wayline Law Blue",
+        "canonical": "#1D5FD1",
+        "tonalRamp": [
+          "#0b2552",
+          "#123a80",
+          "#1d5fd1",
+          "#3f7de0",
+          "#6ea0ff",
+          "#9dbfff",
+          "#c9dbff",
+          "#e3ecfb"
+        ]
+      },
+      "wayline-precedent-green": {
+        "role": "tertiary",
+        "displayName": "Wayline Precedent Green",
+        "canonical": "#0C8052",
+        "tonalRamp": [
+          "#053321",
+          "#084f33",
+          "#0c8052",
+          "#1f9a68",
+          "#46c48c",
+          "#86dab4",
+          "#bfeed7",
+          "#def2e9"
+        ]
+      },
+      "wayline-admin-yellow": {
+        "role": "tertiary",
+        "displayName": "Wayline Admin Yellow",
+        "canonical": "#D69A00",
+        "tonalRamp": [
+          "#3a2e0e",
+          "#7a5600",
+          "#b07f00",
+          "#d69a00",
+          "#f0be3c",
+          "#f6d377",
+          "#fae5ae",
+          "#fcf3d6"
+        ]
+      },
+      "partition-green-gray": {
+        "role": "neutral",
+        "displayName": "Partition Green-Gray",
+        "canonical": "#E9EDEB",
+        "tonalRamp": [
+          "#0e1412",
+          "#18201d",
+          "#3c4742",
+          "#58645f",
+          "#96a49d",
+          "#cdd5d1",
+          "#e9edeb",
+          "#f4f7f5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Signage Display",
+        "purpose": "Empty-state heading only."
+      },
+      "title": {
+        "displayName": "Document Title",
+        "purpose": "Answer section headings."
+      },
+      "body": {
+        "displayName": "Reading Body",
+        "purpose": "Answers, citations, long legal text."
+      },
+      "label": {
+        "displayName": "Counter Label",
+        "purpose": "Buttons, panel heads, stamps, tool names."
+      },
+      "led": {
+        "displayName": "LED Dot-Matrix",
+        "purpose": "Status board and emergency numbers only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "paper",
+        "value": "0 1px 0 rgb(205 213 209 / .9), 0 6px 18px -8px rgb(18 26 23 / .18)",
+        "purpose": "Panels and answer documents."
+      },
+      {
+        "name": "lift",
+        "value": "0 2px 0 rgb(205 213 209 / .9), 0 14px 30px -12px rgb(18 26 23 / .28)",
+        "purpose": "Conversation drawer."
+      },
+      {
+        "name": "led-glass",
+        "value": "inset 0 1px 3px rgb(0 0 0 / .7)",
+        "purpose": "Recessed LED boards."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All entrances."
+      },
+      {
+        "name": "paper-feed",
+        "value": "420ms translateY(-8px)+clip-path from 40%",
+        "purpose": "User ticket printing into the thread (signature)."
+      },
+      {
+        "name": "stamp-press",
+        "value": "360ms scale 1.3 -> 0.95 -> 1 at -6deg",
+        "purpose": "완료 / 검증됨 stamps."
+      },
+      {
+        "name": "led-blink",
+        "value": "1s steps(2)",
+        "purpose": "Processing LED dot."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Commit Button (접수)",
+      "kind": "button",
+      "refersTo": "button-commit",
+      "description": "The one filled action: submit the question.",
+      "html": "<button class=\"ds-btn-commit\">접수 <svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3 8h9.5M8.5 4 12.5 8l-4 4\"/></svg></button>",
+      "css": ".ds-btn-commit{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 20px;border:0;border-radius:4px;background:#0E3B34;color:#F0F6F3;font:700 15px 'Gothic A1',sans-serif;cursor:pointer;transition:background-color .15s,transform .15s}.ds-btn-commit:hover{background:#144E45}.ds-btn-commit:active{transform:translateY(1px)}.ds-btn-commit:focus-visible{outline:2px solid #1D5FD1;outline-offset:2px}"
+    },
+    {
+      "name": "Stop Button (중단)",
+      "kind": "button",
+      "refersTo": "button-stop",
+      "description": "Replaces 접수 while an answer streams.",
+      "html": "<button class=\"ds-btn-stop\"><span></span>중단</button>",
+      "css": ".ds-btn-stop{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 16px;border:1px solid rgba(190,40,36,.6);border-radius:4px;background:#fff;color:#BE2824;font:700 15px 'Gothic A1',sans-serif;cursor:pointer}.ds-btn-stop span{width:12px;height:12px;border-radius:2px;background:currentColor}.ds-btn-stop:hover{background:#FCE7E5}.ds-btn-stop:focus-visible{outline:2px solid #1D5FD1;outline-offset:2px}"
+    },
+    {
+      "name": "Question Field",
+      "kind": "input",
+      "refersTo": "input-question",
+      "description": "Composer textarea.",
+      "html": "<textarea class=\"ds-input\" rows=\"1\" placeholder=\"법률 관련 질문을 입력하세요...\"></textarea>",
+      "css": ".ds-input{min-height:48px;width:320px;resize:none;padding:12px 16px;border:1px solid #96A49D;border-radius:4px;background:#F4F7F5;color:#121A17;font:400 16px 'Noto Sans KR',sans-serif}.ds-input::placeholder{color:#58645F}.ds-input:focus{outline:none;border-color:#0E3B34;background:#fff;box-shadow:0 0 0 2px rgba(14,59,52,.25)}"
+    },
+    {
+      "name": "Status Board",
+      "kind": "custom",
+      "refersTo": "status-board",
+      "description": "LED glass showing live orchestration state.",
+      "html": "<div class=\"ds-led\"><i></i><span>법령 검색 중</span></div>",
+      "css": ".ds-led{display:inline-flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:3px;background-color:#110D0B;background-image:radial-gradient(rgba(92,38,28,.55) .7px,transparent .9px);background-size:3px 3px;box-shadow:inset 0 1px 3px rgba(0,0,0,.7);min-width:220px}.ds-led i{width:8px;height:8px;border-radius:50%;background:#FF5333;box-shadow:0 0 6px rgba(255,83,51,.8);animation:ds-blink 1s steps(2,jump-none) infinite}.ds-led span{color:#FF5333;text-shadow:0 0 6px rgba(255,83,51,.55);font:400 15px 'DotGothic16','Gothic A1',monospace;letter-spacing:.06em}@keyframes ds-blink{50%{opacity:.3}}"
+    },
+    {
+      "name": "Counter Panel",
+      "kind": "card",
+      "refersTo": "counter-panel-head",
+      "description": "Suggested-question group with sign-green head.",
+      "html": "<div class=\"ds-panel\"><div class=\"ds-panel-head\"><b>1</b>법률 상담</div><button class=\"ds-row\">전세 보증금을 돌려받지 못하면 어떻게 해야 하나요?</button><button class=\"ds-row\">층간소음 분쟁 해결 방법과 관련 법률은?</button></div>",
+      "css": ".ds-panel{width:340px;border-radius:4px;overflow:hidden;background:#fff;box-shadow:0 1px 0 rgba(205,213,209,.9),0 6px 18px -8px rgba(18,26,23,.18)}.ds-panel-head{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0E3B34;color:#F0F6F3;font:700 15px 'Gothic A1',sans-serif}.ds-panel-head b{display:grid;place-items:center;width:24px;height:24px;border-radius:3px;background:#F0F6F3;color:#0E3B34;font-weight:800}.ds-row{display:block;width:100%;text-align:left;padding:12px 14px;border:0;border-top:1px solid #CDD5D1;background:#fff;color:#121A17;font:400 15px 'Noto Sans KR',sans-serif;cursor:pointer}.ds-row:first-of-type{border-top:0}.ds-row:hover{background:#F4F7F5}.ds-row:focus-visible{outline:2px solid #1D5FD1;outline-offset:-2px}"
+    },
+    {
+      "name": "Wayline Source Chip",
+      "kind": "chip",
+      "description": "Source-type marker used in tool rows and the source ledger.",
+      "html": "<span class=\"ds-way\"><i style=\"background:#1D5FD1\"></i>법령</span> <span class=\"ds-way\"><i style=\"background:#0C8052\"></i>판례</span> <span class=\"ds-way\"><i style=\"background:#D69A00\"></i>행정규칙</span>",
+      "css": ".ds-way{display:inline-flex;align-items:center;gap:8px;font:700 12px 'Gothic A1',sans-serif;color:#3C4742;margin-right:14px}.ds-way i{width:28px;height:6px;border-radius:6px}"
+    },
+    {
+      "name": "Stamp",
+      "kind": "custom",
+      "description": "완료 / 검증됨 mark.",
+      "html": "<span class=\"ds-stamp\">검증됨</span>",
+      "css": ".ds-stamp{display:inline-block;padding:2px 8px;border:1.5px solid currentColor;border-radius:999px;transform:rotate(-6deg);color:#0C8052;font:800 11px 'Gothic A1',sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Civil-Service Counter (민원 창구)",
+    "overview": "The consultation happens at a public counter, not in a lawyer's study. A question is a numbered thermal ticket, the legal-search tools are counters that visibly take it, and the answer comes back as an issued document with its grounds listed.",
+    "keyCharacteristics": [
+      "Sign band and counter-panel heads in deep counter-sign green; everything else neutral paper.",
+      "Red LED dot-matrix board for live status and emergency numbers only.",
+      "Source type always carried by the three wayfinding line colors (법령 blue, 판례 green, 행정규칙 yellow).",
+      "States read as marks: blinking LED (processing), rotated stamp (완료, 검증됨), dashed border (검증 대기).",
+      "Square-ish 3–4px corners, 1px rules, no gradients."
+    ],
+    "rules": [
+      {
+        "name": "The Wayline Rule",
+        "body": "Blue, green and yellow mean 법령, 판례, 행정규칙 and nothing else. A new surface that needs an accent uses the sign green, not a wayline.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Commit Rule",
+        "body": "Only one control per view is filled with counter-sign green: the action that submits.",
+        "section": "colors"
+      },
+      {
+        "name": "The Real LED Rule",
+        "body": "The dot-matrix face is used only on LED glass; never for body copy or as a \"technical\" costume.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do keep the composer dock pinned and reachable at every viewport.",
+      "Do mark every source with its wayline color bar and label, never color alone.",
+      "Do express state as a mark (stamp, blinking LED, dashed border) plus text.",
+      "Do honor prefers-reduced-motion: feed, stamp and LED blink animations switch off."
+    ],
+    "donts": [
+      "Don't return to navy, gold and serif \"law library\" styling; that is the retired look.",
+      "Don't use colored left borders over 1px on cards, list items or callouts; use rules, fills or bars.",
+      "Don't put LED red on anything that is not live status or an emergency number.",
+      "Don't block pinch-zoom; readers rely on it alongside A-/A+."
+    ]
+  }
+}
