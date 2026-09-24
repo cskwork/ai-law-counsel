@@ -51,7 +51,7 @@ export function MessageList({ events, isStreaming }: MessageListProps) {
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-3 py-6 sm:px-5"
+      className="relative min-h-0 flex-1 overflow-y-auto scrollbar-thin px-3 py-6 sm:px-5"
     >
       <div className="mx-auto max-w-[48rem] space-y-3">
         {events.map((event) => {

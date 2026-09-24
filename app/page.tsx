@@ -84,7 +84,7 @@ export default function Home() {
     'grid h-9 min-w-9 place-items-center rounded-chip px-2 text-sign-ink-2 transition-colors hover:bg-sign-ink/10 hover:text-sign-ink disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent';
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-ground">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-ground">
       <Disclaimer />
       <Sidebar
         conversations={conversations}
