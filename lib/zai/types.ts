@@ -10,6 +10,8 @@ export type MessageRole = 'system' | 'user' | 'assistant' | 'tool';
 export interface ChatMessage {
   role: MessageRole;
   content: string;
+  /** assistant 메시지가 요청한 도구 호출 (다음 tool 메시지들이 이 id에 응답) */
+  tool_calls?: ToolCall[];
   tool_call_id?: string;
 }
 

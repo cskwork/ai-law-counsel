@@ -18,6 +18,11 @@ export function buildPrecedentUrl(caseNumber: string): string {
   return `${LAW_GO_KR_BASE}/precSc.do?query=${encodeURIComponent(caseNumber)}`;
 }
 
+/** 판례 상세 페이지 URL (판례 일련번호 기준, 국가법령정보센터 공개 페이지) */
+export function buildPrecedentDetailUrl(precedentId: string): string {
+  return `${LAW_GO_KR_BASE}/LSW/precInfoP.do?precSeq=${encodeURIComponent(precedentId)}`;
+}
+
 /** 행정규칙 URL 생성 */
 function buildRuleUrl(ruleName: string): string {
   return `${LAW_GO_KR_BASE}/행정규칙/${encodeURIComponent(ruleName)}`;
