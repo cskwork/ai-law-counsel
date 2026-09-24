@@ -47,3 +47,25 @@ export async function searchPrecedent(
   const parsed = await client.fetchAndParse(url);
   return parsePrecedentSearchXml(parsed as Record<string, unknown>);
 }
+
+/**
+ * 도구용 판례 검색 (대체 검색 포함)
+ * - 기본 검색은 사건명만 대상으로 하므로 "근로기준법 제23조 부당해고"처럼 긴 질의는 0건이 된다.
+ * - 0건이면 판결 본문 검색(search=2)으로 한 번 더 찾는다.
+ */
+export async function searchPrecedentWithFallback(
+  client: LawApiClient,
+  params: SearchParams,
+): Promise<PrecedentSearchResult> {
+  const query = params.query.trim();
+  const byName = await searchPrecedent(client, { ...params, query });
+  if (byName.totalCount > 0 || !query) {
+    return byName;
+  }
+
+  const byBody = await searchPrecedent(client, { ...params, query, search: 2 });
+  return {
+    ...byBody,
+    searchNote: `사건명에 "${query}"가 들어간 판례가 없어 판결 본문 검색 결과를 보여줍니다. 관련성이 낮을 수 있으니 짧은 핵심어(예: "부당해고")로 다시 검색하는 것도 방법입니다.`,
+  };
+}

@@ -4,6 +4,7 @@
 export type WayLine = 'law' | 'precedent' | 'admin' | 'neutral';
 
 const TOOL_LABELS: Record<string, string> = {
+  search_law_articles: '관련 조문 검색',
   search_law: '법령 검색',
   get_law_detail: '법령 조문 조회',
   search_precedent: '판례 검색',

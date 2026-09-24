@@ -43,8 +43,8 @@ export class ZaiClient {
       model: MODEL,
       messages,
       stream: false,
-      tools,
-      tool_choice: 'auto',
+      // 도구 목록이 비면(최종 답변 강제) tools 필드를 아예 보내지 않는다
+      ...(tools.length > 0 && { tools, tool_choice: 'auto' as const }),
     };
 
     return this.request(body);

@@ -43,6 +43,17 @@ describe('LawApiClient', () => {
 
       expect(url).not.toContain('page=');
       expect(url).not.toContain('display=');
+      expect(url).not.toContain('search=');
+    });
+
+    it('본문 검색(search=2)과 지능형 검색(target=aiSearch) 파라미터를 생성해야 한다', () => {
+      const bodySearch = new URL(client.buildSearchUrl('prec', { query: '부당해고', search: 2 }));
+      const aiSearch = new URL(client.buildSearchUrl('aiSearch', { query: '부당해고 구제신청', display: 10 }));
+
+      expect(bodySearch.searchParams.get('search')).toBe('2');
+      expect(aiSearch.searchParams.get('target')).toBe('aiSearch');
+      expect(aiSearch.searchParams.get('query')).toBe('부당해고 구제신청');
+      expect(aiSearch.searchParams.get('display')).toBe('10');
     });
   });
 
@@ -83,6 +94,12 @@ describe('LawApiClient', () => {
           count: 5,
         },
       });
+    });
+
+    it('0으로 시작하는 식별자(법령ID, 조문번호)는 문자열로 유지해야 한다', () => {
+      const result = client.parseXml('<r><법령ID>001872</법령ID><조문번호>0005</조문번호><조문가지번호>00</조문가지번호></r>');
+
+      expect(result).toEqual({ r: { 법령ID: '001872', 조문번호: '0005', 조문가지번호: '00' } });
     });
 
     it('빈 XML 요소를 처리해야 한다', () => {

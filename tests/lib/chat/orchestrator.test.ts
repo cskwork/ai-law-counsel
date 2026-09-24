@@ -3,7 +3,9 @@
  * - 도구 호출 없는 직접 응답, 도구 호출 루프, 최대 라운드 제한, clarify_situation 처리
  */
 import { describe, it, expect, vi } from 'vitest';
-import { orchestrateChat, extractSources, deduplicateSources, type OrchestratorDeps } from '@/lib/chat/orchestrator';
+import { orchestrateChat, MAX_TOOL_ROUNDS, TOOL_PHASE_BUDGET_MS, type OrchestratorDeps } from '@/lib/chat/orchestrator';
+import type { ChatMessage } from '@/lib/zai/types';
+import type { ZaiTurnDelta } from '@/lib/utils/zai-stream';
 import type { SSEEvent } from '@/lib/utils/sse';
 import { CLARIFY_TOOL } from '@/lib/zai/tools-schema';
 
@@ -90,13 +92,12 @@ describe('orchestrateChat', () => {
     expect(deps.executeTool).toHaveBeenCalledWith('search_law', '{"query":"임대차"}');
   });
 
-  it('최대 10라운드 도구 호출 후 수집된 정보로 최종 답변을 생성한다', async () => {
-    const toolCallResponses = Array.from({ length: 11 }, () => ({
+  it('도구 호출 한도에 닿으면 도구 없이 최종 답변 턴을 강제한다 (비스트리밍)', async () => {
+    const toolCallResponses = Array.from({ length: MAX_TOOL_ROUNDS }, (_, i) => ({
       toolCalls: [
-        { id: 'call_x', name: 'search_law', arguments: '{"query":"test"}' },
+        { id: `call_${i}`, name: 'search_law', arguments: '{"query":"test"}' },
       ],
     }));
-    // 마지막 응답: 도구 없이 최종 답변 (비스트리밍 fallback 경로)
     const finalAnswer = { content: '종합하면, 관련 법령에 따르면...' };
     const deps = createMockDeps([...toolCallResponses, finalAnswer]);
     const events: SSEEvent[] = [];
@@ -107,26 +108,27 @@ describe('orchestrateChat', () => {
       deps,
     );
 
-    // 11회 도구 호출 시도 + 1회 최종 답변 = 12회
-    expect(deps.zaiComplete).toHaveBeenCalledTimes(12);
-    // 마지막 호출은 빈 도구 배열로 호출되어야 함
-    const lastCall = (deps.zaiComplete as ReturnType<typeof vi.fn>).mock.calls[11];
+    // 한도만큼 도구 라운드 + 1회 최종 답변
+    expect(deps.zaiComplete).toHaveBeenCalledTimes(MAX_TOOL_ROUNDS + 1);
+    const lastCall = (deps.zaiComplete as ReturnType<typeof vi.fn>).mock.calls[MAX_TOOL_ROUNDS];
+    // 마지막 호출은 빈 도구 배열 + 최종 답변 지시
     expect(lastCall[1]).toEqual([]);
-    // LLM이 생성한 실제 답변이 전달되어야 함
+    const lastMessages = lastCall[0] as ChatMessage[];
+    expect(lastMessages[lastMessages.length - 1].content).toContain('최종 답변');
     expect(
       events.some((e) => e.type === 'content' && e.content?.includes('종합하면')),
     ).toBe(true);
+    expect(events[events.length - 1].type).toBe('done');
   });
 
-  it('최대 라운드 초과 시 스트리밍으로 최종 답변을 생성한다', async () => {
-    const toolCallResponses = Array.from({ length: 11 }, () => ({
+  it('도구 호출 한도에 닿으면 스트리밍으로 최종 답변을 생성한다', async () => {
+    const toolCallResponses = Array.from({ length: MAX_TOOL_ROUNDS }, (_, i) => ({
       toolCalls: [
-        { id: 'call_x', name: 'search_law', arguments: '{"query":"test"}' },
+        { id: `call_${i}`, name: 'search_law', arguments: '{"query":"test"}' },
       ],
     }));
     const deps = createMockDeps(toolCallResponses);
 
-    // 스트리밍 mock 추가
     const streamedChunks = ['종합적으로 ', '판단하면...'];
     deps.zaiStream = vi.fn().mockImplementation(async function* () {
       for (const chunk of streamedChunks) {
@@ -141,10 +143,9 @@ describe('orchestrateChat', () => {
       deps,
     );
 
-    // 스트리밍이 있으므로 zaiComplete는 11회만 (최종 답변은 스트리밍)
-    expect(deps.zaiComplete).toHaveBeenCalledTimes(11);
+    expect(deps.zaiComplete).toHaveBeenCalledTimes(MAX_TOOL_ROUNDS);
     expect(deps.zaiStream).toHaveBeenCalledTimes(1);
-    // 스트리밍 청크가 content로 전달되어야 함
+    expect((deps.zaiStream as ReturnType<typeof vi.fn>).mock.calls[0][1]).toEqual([]);
     expect(
       events.some((e) => e.type === 'content' && e.content === '종합적으로 '),
     ).toBe(true);
@@ -220,17 +221,20 @@ describe('orchestrateChat', () => {
     expect(toolResultEvent?.summary).toBe('5건 발견');
   });
 
-  it('도구 호출 후 done 이벤트에 sources가 포함된다', async () => {
+  it('done 이벤트의 sources에는 답변이 실제로 인용한, 도구로 조회한 자료만 담긴다', async () => {
     const deps = createMockDeps([
       {
         toolCalls: [
-          { id: 'call_1', name: 'search_law', arguments: '{"query":"임대차"}' },
+          { id: 'call_1', name: 'search_law', arguments: '{"query":"주택임대차보호법"}' },
+          { id: 'call_2', name: 'search_precedent', arguments: '{"query":"임대차보증금"}' },
         ],
       },
-      { content: '결과입니다.' },
+      { content: '[주택임대차보호법 제3조](cite:statute/주택임대차보호법/3)에 따라 대항력이 생깁니다.' },
     ]);
-    deps.executeTool = vi.fn().mockResolvedValue(
-      '{"totalCount":1,"items":[{"lawNameKo":"주택임대차보호법","lawId":"14450"}]}',
+    deps.executeTool = vi.fn().mockImplementation(async (name: string) =>
+      name === 'search_law'
+        ? '{"totalCount":1,"items":[{"lawNameKo":"주택임대차보호법","lawId":"001248"}]}'
+        : '{"totalCount":2,"items":[{"precedentId":"1","caseNumber":"2023다1","caseName":"보증금"},{"precedentId":"2","caseNumber":"2023다2","caseName":"보증금"}]}',
     );
     const events: SSEEvent[] = [];
 
@@ -242,13 +246,10 @@ describe('orchestrateChat', () => {
 
     const doneEvent = events[events.length - 1];
     expect(doneEvent.type).toBe('done');
-    expect(doneEvent.sources).toBeDefined();
-    expect(doneEvent.sources).toHaveLength(1);
-    expect(doneEvent.sources![0]).toMatchObject({
-      type: 'law',
-      name: '주택임대차보호법',
-      identifier: '14450',
-    });
+    // 검색만 되고 답변에 인용되지 않은 판례 2건은 출처가 아니다
+    expect(doneEvent.sources).toEqual([
+      expect.objectContaining({ type: 'law', name: '주택임대차보호법 제3조' }),
+    ]);
     expect(doneEvent.sources![0].url).toContain('law.go.kr');
   });
 
@@ -275,63 +276,191 @@ describe('orchestrateChat', () => {
   });
 });
 
-describe('extractSources', () => {
-  it('search_law 결과에서 법령 출처를 추출한다', () => {
-    const result = JSON.stringify({
-      totalCount: 2,
-      items: [
-        { lawNameKo: '민법', lawId: '10101' },
-        { lawNameKo: '상법', lawId: '10102' },
-      ],
+describe('orchestrateChat - 최종 답변 보장', () => {
+  const PLANNING = '판례 확인이 완료되었습니다. 이제 핵심 법조문인 근로기준법의 해고 제한 조항과 구제 절차 조항을 상세 조회하겠습니다.';
+  const FINAL = '## 한눈에 보기\n부당해고등이 있었던 날부터 3개월 이내에 노동위원회에 구제신청을 하세요([근로기준법 제28조](cite:statute/근로기준법/28)).';
+
+  function contentOf(events: SSEEvent[]): string {
+    return events.filter((e) => e.type === 'content').map((e) => e.content).join('');
+  }
+
+  it('도구 호출과 결과가 assistant.tool_calls ↔ tool.tool_call_id로 짝지어 다음 호출에 전달된다', async () => {
+    const snapshots: ChatMessage[][] = [];
+    const deps = createMockDeps([
+      { content: '검색하겠습니다.', toolCalls: [{ id: 'call_a', name: 'search_law', arguments: '{"query":"근로기준법"}' }] },
+      { content: FINAL },
+    ]);
+    const complete = deps.zaiComplete;
+    deps.zaiComplete = vi.fn(async (messages: ChatMessage[], tools) => {
+      snapshots.push(messages.map((m) => ({ ...m })));
+      return complete(messages, tools);
     });
-    const sources = extractSources('search_law', result);
-    expect(sources).toHaveLength(2);
-    expect(sources[0]).toMatchObject({ type: 'law', name: '민법', identifier: '10101' });
-    expect(sources[0].url).toContain('law.go.kr');
-    expect(sources[1]).toMatchObject({ type: 'law', name: '상법', identifier: '10102' });
+
+    await orchestrateChat([{ role: 'user', content: '부당해고' }], () => undefined, deps);
+
+    const second = snapshots[1];
+    const assistant = second.find((m) => m.role === 'assistant');
+    const tool = second.find((m) => m.role === 'tool');
+    expect(assistant?.tool_calls?.[0]).toMatchObject({ id: 'call_a', function: { name: 'search_law' } });
+    expect(tool?.tool_call_id).toBe('call_a');
+    expect(second[0].content).toContain('오늘 날짜');
   });
 
-  it('get_law_detail 결과에서 법령 출처를 추출한다', () => {
-    const result = JSON.stringify({ lawNameKo: '민법', lawId: '10101', articles: [] });
-    const sources = extractSources('get_law_detail', result);
-    expect(sources).toHaveLength(1);
-    expect(sources[0]).toMatchObject({ type: 'law', name: '민법' });
+  it('계획 문장만 돌아오면 사용자에게 보내지 않고 진행을 재촉해 실제 답변을 받는다', async () => {
+    const deps = createMockDeps([
+      { content: PLANNING },
+      { toolCalls: [{ id: 'call_1', name: 'search_law', arguments: '{"query":"근로기준법"}' }] },
+      { content: FINAL },
+    ]);
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat([{ role: 'user', content: '부당해고 대처 방법은?' }], (e) => events.push(e), deps);
+
+    expect(contentOf(events)).toBe(FINAL);
+    expect(contentOf(events)).not.toContain('조회하겠습니다');
+    const nudgeCall = (deps.zaiComplete as ReturnType<typeof vi.fn>).mock.calls[1][0] as ChatMessage[];
+    expect(nudgeCall.some((m) => m.role === 'user' && m.content.includes('계획만 말하고'))).toBe(true);
   });
 
-  it('search_precedent 결과에서 판례 출처를 추출한다', () => {
-    const result = JSON.stringify({
-      totalCount: 1,
-      items: [{ caseName: '사기 사건', caseNumber: '2023다12345' }],
-    });
-    const sources = extractSources('search_precedent', result);
-    expect(sources).toHaveLength(1);
-    expect(sources[0]).toMatchObject({ type: 'precedent', name: '사기 사건', identifier: '2023다12345' });
-    expect(sources[0].url).toBeUndefined();
+  it('재촉 후에도 계획 문장뿐이면 도구 없이 최종 답변을 강제한다', async () => {
+    const deps = createMockDeps([
+      { content: PLANNING },
+      { content: '추가로 확인하겠습니다.' },
+      { content: FINAL },
+    ]);
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat([{ role: 'user', content: '부당해고 대처 방법은?' }], (e) => events.push(e), deps);
+
+    const calls = (deps.zaiComplete as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(3);
+    expect(calls[2][1]).toEqual([]);
+    expect(contentOf(events)).toBe(FINAL);
   });
 
-  it('잘못된 JSON이면 빈 배열을 반환한다', () => {
-    expect(extractSources('search_law', 'not json')).toEqual([]);
+  it('강제한 최종 답변마저 계획 문장이면 계획 문장 대신 실패 안내를 보여준다', async () => {
+    const deps = createMockDeps([{ content: PLANNING }, { content: PLANNING }, { content: PLANNING }]);
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat([{ role: 'user', content: '부당해고 대처 방법은?' }], (e) => events.push(e), deps);
+
+    expect(contentOf(events)).not.toContain('조회하겠습니다');
+    expect(contentOf(events)).toContain('다시 보내 주세요');
+    expect(events[events.length - 1].type).toBe('done');
   });
 
-  it('최대 10건까지만 추출한다', () => {
-    const items = Array.from({ length: 15 }, (_, i) => ({
-      lawNameKo: `법령${i}`,
-      lawId: `${i}`,
+  it('시간 예산을 넘기면 남은 라운드를 쓰지 않고 최종 답변으로 넘어간다', async () => {
+    const responses = Array.from({ length: MAX_TOOL_ROUNDS }, (_, i) => ({
+      toolCalls: [{ id: `call_${i}`, name: 'search_law', arguments: '{"query":"x"}' }],
     }));
-    const result = JSON.stringify({ totalCount: 15, items });
-    const sources = extractSources('search_law', result);
-    expect(sources).toHaveLength(10);
+    const deps = createMockDeps([...responses.slice(0, 1), { content: FINAL }]);
+    let clock = 0;
+    deps.now = () => clock;
+    deps.executeTool = vi.fn().mockImplementation(async () => {
+      clock += TOOL_PHASE_BUDGET_MS + 1;
+      return '{"totalCount":0,"items":[]}';
+    });
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat([{ role: 'user', content: 'x' }], (e) => events.push(e), deps);
+
+    const calls = (deps.zaiComplete as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1][1]).toEqual([]);
+    expect(contentOf(events)).toBe(FINAL);
+  });
+
+  it('최종 답변 스트림이 같은 단어 반복으로 퇴행하면 중단하고 안내를 붙인다', async () => {
+    const deps = createMockDeps([{ content: PLANNING }, { content: PLANNING }]);
+    let yielded = 0;
+    deps.zaiStream = vi.fn().mockImplementation(async function* () {
+      yield '핵심 조문을 확인했습니다.';
+      for (let i = 0; i < 5000; i++) {
+        yielded++;
+        yield ' Kavanaugh';
+      }
+    });
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat([{ role: 'user', content: 'x' }], (e) => events.push(e), deps);
+
+    expect(yielded).toBeLessThan(200);
+    expect(contentOf(events)).toContain('비정상적으로 반복');
+    expect(events[events.length - 1].type).toBe('done');
   });
 });
 
-describe('deduplicateSources', () => {
-  it('동일한 type+identifier 출처를 중복 제거한다', () => {
-    const sources = [
-      { type: 'law' as const, name: '민법', identifier: '10101', url: 'a' },
-      { type: 'law' as const, name: '민법', identifier: '10101', url: 'a' },
-      { type: 'precedent' as const, name: '사건', identifier: '2023다1' },
-    ];
-    const result = deduplicateSources(sources);
-    expect(result).toHaveLength(2);
+describe('orchestrateChat - 스트리밍 턴', () => {
+  function streamTurns(turns: ZaiTurnDelta[][]) {
+    let index = 0;
+    return vi.fn().mockImplementation(async function* () {
+      for (const delta of turns[index++] ?? []) yield delta;
+    });
+  }
+
+  it('도구 호출 전 머리말은 숨기고, 도구 없는 긴 답변은 조각 단위로 실시간 전달한다', async () => {
+    const answerChunks = ['## 한눈에 보기\n', '가'.repeat(300), '\n\n', '나'.repeat(100)];
+    const deps: OrchestratorDeps = {
+      tools: TEST_TOOLS,
+      zaiComplete: vi.fn(),
+      executeTool: vi.fn().mockResolvedValue('{"totalCount":1,"items":[{"lawNameKo":"근로기준법","lawId":"001872"}]}'),
+      zaiStreamTurn: streamTurns([
+        [
+          { type: 'content', text: '관련 법령을 검색해 보겠습니다.' },
+          { type: 'tool_call', index: 0, id: 'call_1', name: 'search_law', arguments: '{"query":' },
+          { type: 'tool_call', index: 0, arguments: '"근로기준법"}' },
+        ],
+        answerChunks.map((text) => ({ type: 'content' as const, text })),
+      ]),
+    };
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat([{ role: 'user', content: '부당해고' }], (e) => events.push(e), deps);
+
+    expect(deps.executeTool).toHaveBeenCalledWith('search_law', '{"query":"근로기준법"}');
+    const contents = events.filter((e) => e.type === 'content').map((e) => e.content);
+    expect(contents.join('')).toBe(answerChunks.join(''));
+    expect(contents.join('')).not.toContain('검색해 보겠습니다');
+    // 임계값을 넘은 뒤에는 조각 단위로 전달
+    expect(contents.length).toBeGreaterThan(1);
+    expect(deps.zaiComplete).not.toHaveBeenCalled();
+    expect(events[events.length - 1].type).toBe('done');
+  });
+
+  it('스트리밍 턴이 짧은 계획 문장으로 끝나면 보내지 않고 진행을 재촉한다', async () => {
+    const final = '## 한눈에 보기\n' + '답'.repeat(400);
+    const deps: OrchestratorDeps = {
+      tools: TEST_TOOLS,
+      zaiComplete: vi.fn(),
+      executeTool: vi.fn(),
+      zaiStreamTurn: streamTurns([
+        [{ type: 'content', text: '이제 조문을 상세 조회하겠습니다.' }],
+        [{ type: 'content', text: final }],
+      ]),
+    };
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat([{ role: 'user', content: '부당해고' }], (e) => events.push(e), deps);
+
+    const content = events.filter((e) => e.type === 'content').map((e) => e.content).join('');
+    expect(content).toBe(final);
+    expect(deps.zaiStreamTurn).toHaveBeenCalledTimes(2);
+  });
+
+  it('짧지만 완성된 답변(인사 등)은 스트림이 끝난 뒤 그대로 전달한다', async () => {
+    const deps: OrchestratorDeps = {
+      tools: TEST_TOOLS,
+      zaiComplete: vi.fn(),
+      executeTool: vi.fn(),
+      zaiStreamTurn: streamTurns([[{ type: 'content', text: '안녕하세요! ' }, { type: 'content', text: '무엇을 도와드릴까요?' }]]),
+    };
+    const events: SSEEvent[] = [];
+
+    await orchestrateChat([{ role: 'user', content: '안녕' }], (e) => events.push(e), deps);
+
+    expect(events).toEqual([
+      { type: 'content', content: '안녕하세요! 무엇을 도와드릴까요?' },
+      { type: 'done' },
+    ]);
   });
 });

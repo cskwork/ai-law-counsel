@@ -5,7 +5,7 @@ import { getLawDetail } from '@/lib/law/get-law-detail';
 import { getPublicLawArticle } from '@/lib/law/get-public-law-article';
 import { getPrecedentDetail } from '@/lib/law/get-precedent-detail';
 import { normalizeArticleNumber, toLawServiceArticleCode } from '@/lib/law/article-number';
-import { searchLaw } from '@/lib/law/search-law';
+import { pickLawByName, searchLaw } from '@/lib/law/search-law';
 import { searchPrecedent } from '@/lib/law/search-precedent';
 import type { LawArticle } from '@/lib/law/types';
 
@@ -82,8 +82,8 @@ export async function GET(request: Request) {
 
     if (type === 'statute') {
       // 1단계: 법령명으로 검색 → 법령 ID 해석
-      const searchResult = await searchLaw(client, { query: id, display: 3 });
-      const lawItem = searchResult.items[0];
+      const searchResult = await searchLaw(client, { query: id, display: 20 });
+      const lawItem = pickLawByName(searchResult.items, id);
 
       if (!lawItem) {
         return Response.json({
