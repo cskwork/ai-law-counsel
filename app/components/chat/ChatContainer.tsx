@@ -368,7 +368,7 @@ export function ChatContainer({
   return (
     <div className="flex h-full flex-col">
       {!hasMessages ? (
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+        <div className="relative min-h-0 flex-1 overflow-y-auto scrollbar-thin">
           <EmptyState onPick={handleSend} disabled={isStreaming} />
         </div>
       ) : (
