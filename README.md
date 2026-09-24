@@ -44,8 +44,10 @@ Guided Q&A flow that produces a complete draft with cited legal basis:
 - All citations are MCP-verified against the official source
 
 ### UI / UX
-- '변호사의 서재' design system, mobile-first responsive layout
-- Adjustable font size (A- / A+) for accessibility
+- '민원 창구' (civil-service counter) design system: question tickets, a live LED status board naming the tool at work, answers as issued documents, sources color-coded 법령 / 판례 / 행정규칙 (see [DESIGN.md](DESIGN.md))
+- Composer pinned to the bottom at every screen size; stop button to cancel an answer mid-stream (partial text is kept)
+- Conversation history search and two-step "delete all" confirmation
+- Day / night theme (follows the system until toggled), adjustable font size (A- / A+), pinch-zoom allowed
 - Prominent legal disclaimer on every response
 
 ## How It Works
@@ -82,7 +84,7 @@ The LLM decides which laws and precedents to search based on the user's question
 | Markdown | react-markdown + remark-gfm |
 | Testing | Vitest (unit/integration) + Playwright (E2E) |
 | Deployment | Vercel (serverless) |
-| Font | Geist (via next/font) |
+| Font | Gothic A1, Noto Sans KR, DotGothic16 (via next/font) |
 
 ## Architecture
 
