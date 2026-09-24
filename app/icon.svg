@@ -1,30 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e3a5f"/>
-      <stop offset="100%" stop-color="#0f2440"/>
-    </linearGradient>
-  </defs>
-  <!-- 배경 -->
-  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  <!-- 천칭 기둥 -->
-  <rect x="246" y="140" width="20" height="240" rx="4" fill="#c9a84c"/>
-  <!-- 천칭 받침대 -->
-  <rect x="196" y="370" width="120" height="16" rx="8" fill="#c9a84c"/>
-  <!-- 천칭 수평 막대 -->
-  <rect x="116" y="152" width="280" height="10" rx="5" fill="#c9a84c"/>
-  <!-- 왼쪽 접시 줄 -->
-  <line x1="156" y1="157" x2="156" y2="230" stroke="#c9a84c" stroke-width="4"/>
-  <line x1="116" y1="157" x2="156" y2="230" stroke="#c9a84c" stroke-width="3"/>
-  <line x1="196" y1="157" x2="156" y2="230" stroke="#c9a84c" stroke-width="3"/>
-  <!-- 왼쪽 접시 -->
-  <ellipse cx="156" cy="236" rx="56" ry="12" fill="#c9a84c"/>
-  <!-- 오른쪽 접시 줄 -->
-  <line x1="356" y1="157" x2="356" y2="230" stroke="#c9a84c" stroke-width="4"/>
-  <line x1="316" y1="157" x2="356" y2="230" stroke="#c9a84c" stroke-width="3"/>
-  <line x1="396" y1="157" x2="356" y2="230" stroke="#c9a84c" stroke-width="3"/>
-  <!-- 오른쪽 접시 -->
-  <ellipse cx="356" cy="236" rx="56" ry="12" fill="#c9a84c"/>
-  <!-- AI 텍스트 -->
-  <text x="256" y="330" text-anchor="middle" font-family="system-ui, sans-serif" font-size="56" font-weight="700" fill="#e8d9a0" letter-spacing="8">AI</text>
+  <!-- 창구 사인 배경 -->
+  <rect width="512" height="512" rx="88" fill="#0E3B34"/>
+  <!-- 번호표 (상단 천공) -->
+  <path d="M136 120h240v292H136z" fill="#FFFFFF"/>
+  <g fill="#0E3B34">
+    <circle cx="156" cy="120" r="10"/><circle cx="196" cy="120" r="10"/><circle cx="236" cy="120" r="10"/>
+    <circle cx="276" cy="120" r="10"/><circle cx="316" cy="120" r="10"/><circle cx="356" cy="120" r="10"/>
+  </g>
+  <!-- LED 점 -->
+  <circle cx="186" cy="176" r="14" fill="#FF5333"/>
+  <!-- 안내선: 법령 · 판례 · 행정규칙 -->
+  <rect x="176" y="232" width="160" height="26" rx="13" fill="#1D5FD1"/>
+  <rect x="176" y="286" width="124" height="26" rx="13" fill="#0C8052"/>
+  <rect x="176" y="340" width="92" height="26" rx="13" fill="#D69A00"/>
 </svg>

@@ -1,58 +1,59 @@
 import type { SourceItem } from '@/lib/utils/sse';
 
-const TYPE_CONFIG: Record<SourceItem['type'], { label: string; bgClass: string; textClass: string }> = {
-  law: { label: '법령', bgClass: 'bg-cite-law-bg', textClass: 'text-cite-law' },
-  precedent: { label: '판례', bgClass: 'bg-cite-precedent-bg', textClass: 'text-cite-precedent' },
-  admin_rule: { label: '행정규칙', bgClass: 'bg-cite-admin-bg', textClass: 'text-cite-admin' },
+const TYPE_CONFIG: Record<SourceItem['type'], { label: string; lineClass: string; textClass: string }> = {
+  law: { label: '법령', lineClass: 'bg-way-law', textClass: 'text-way-law' },
+  precedent: { label: '판례', lineClass: 'bg-way-precedent', textClass: 'text-way-precedent' },
+  admin_rule: { label: '행정규칙', lineClass: 'bg-way-admin', textClass: 'text-way-admin-ink' },
 };
 
 interface SourcesFooterProps {
   sources: SourceItem[];
 }
 
-// 참조 출처 표시 (항상 펼쳐진 수평선 섹션)
+// 근거 목록: 답변 문서에 첨부되는 출처 대장 (안내선 색으로 유형 구분)
 export function SourcesFooter({ sources }: SourcesFooterProps) {
   if (sources.length === 0) return null;
 
   return (
-    <div className="my-3 animate-settle">
-      <div className="max-w-[92%] sm:max-w-[85%] lg:max-w-[80%] pl-5">
-        <div className="border-t border-border-default pt-3">
-          <p className="font-display text-[11px] font-semibold uppercase tracking-wider text-ink-tertiary mb-2">
-            참조 출처
-          </p>
-          <ul className="space-y-1.5">
-            {sources.map((source) => {
-              const config = TYPE_CONFIG[source.type];
-              return (
-                <li key={`${source.type}:${source.identifier}`} className="flex items-start gap-2 text-xs">
-                  <span className={`inline-flex shrink-0 items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${config.bgClass} ${config.textClass}`}>
-                    {config.label}
+    <section aria-label="참조 출처" className="animate-settle">
+      <div className="rounded-[4px] border border-rule bg-paper-2 px-4 py-3 sm:px-5">
+        <h3 className="mb-2 flex items-baseline gap-2 font-sign text-[0.8rem] font-bold text-ink">
+          참조 출처
+          <span className="tabular font-body text-xs font-normal text-ink-3">{sources.length}건</span>
+        </h3>
+        <ul className="divide-y divide-rule">
+          {sources.map((source) => {
+            const config = TYPE_CONFIG[source.type];
+            return (
+              <li key={`${source.type}:${source.identifier}`} className="flex items-start gap-3 py-2 text-[0.83rem]">
+                <span className={`flex w-16 shrink-0 items-center gap-1.5 pt-0.5 text-xs font-bold ${config.textClass}`}>
+                  <span aria-hidden="true" className={`h-1.5 w-3 rounded-full ${config.lineClass}`} />
+                  {config.label}
+                </span>
+                {source.url ? (
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-w-0 items-center gap-1 leading-5 text-ink underline decoration-rule-strong underline-offset-[3px] transition-colors hover:text-way-law hover:decoration-way-law"
+                  >
+                    <span className="min-w-0 break-words">{source.name}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" className="h-2.5 w-2.5 shrink-0 opacity-60" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 2.5h5v5M9.5 2.5 3 9" />
+                    </svg>
+                    <span className="sr-only">(새 창)</span>
+                  </a>
+                ) : (
+                  <span className="leading-5 text-ink-2">
+                    {source.name}
+                    <span className="tabular ml-1 text-ink-3">({source.identifier})</span>
                   </span>
-                  {source.url ? (
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="leading-5 text-authority-mid hover:text-authority-deep hover:underline transition-colors inline-flex items-center gap-1"
-                    >
-                      {source.name}
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5 opacity-50">
-                        <path d="M3.5 1.75a.75.75 0 0 0 0 1.5h3.69L1.22 9.22a.75.75 0 1 0 1.06 1.06l5.97-5.97V8a.75.75 0 0 0 1.5 0V2.5a.75.75 0 0 0-.75-.75h-5.5Z" />
-                      </svg>
-                    </a>
-                  ) : (
-                    <span className="leading-5 text-ink-secondary">
-                      {source.name}
-                      <span className="ml-1 text-ink-tertiary">({source.identifier})</span>
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       </div>
-    </div>
+    </section>
   );
 }

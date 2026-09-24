@@ -2,67 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * 민원 창구 (civil-service counter) design system.
+ * Tokens are RGB channels so Tailwind opacity modifiers keep working.
+ */
 :root {
-  /* --- Typography --- */
-  --font-display: var(--font-noto-serif-kr), Georgia, serif;
-  --font-body: var(--font-noto-sans-kr), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-sign: var(--font-gothic-a1), 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body: var(--font-noto-sans-kr), 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --font-led: var(--font-dotgothic), var(--font-gothic-a1), ui-monospace, monospace;
 
-  /* --- Surface / Background --- */
-  --surface-ground: #FAF8F5;
-  --surface-primary: #FFFFFF;
-  --surface-elevated: #F5F2ED;
-  --surface-sunken: #EFECE6;
+  /* partition wall, paper, ink */
+  --ground: 233 237 235;
+  --paper: 255 255 255;
+  --paper-2: 244 247 245;
+  --ink: 18 26 23;
+  --ink-2: 60 71 66;
+  --ink-3: 88 100 95;
+  --rule: 205 213 209;
+  --rule-strong: 150 164 157;
 
-  /* --- Ink / Text --- */
-  --ink-primary: #1A1714;
-  --ink-secondary: #5C564D;
-  --ink-tertiary: #8A837A;
-  --ink-inverse: #FAF8F5;
+  /* counter sign band + the one commit colour */
+  --sign: 14 59 52;
+  --sign-hover: 20 78 69;
+  --sign-ink: 240 246 243;
+  --sign-ink-2: 170 199 189;
 
-  /* --- Brand / Authority --- */
-  --authority-deep: #1B2A4A;
-  --authority-mid: #2D4470;
-  --authority-light: #E8ECF4;
+  /* LED dot-matrix board */
+  --led: 255 83 51;
+  --led-ground: 17 13 11;
+  --led-dim: 92 38 28;
 
-  /* --- Accent / Legal Gold --- */
-  --accent-gold: #B8943F;
-  --accent-gold-light: #F4EDD8;
-  --accent-gold-dim: #9A7B30;
+  /* floor wayfinding lines: source type */
+  --way-law: 29 95 209;
+  --way-law-tint: 227 236 251;
+  --way-precedent: 12 128 82;
+  --way-precedent-tint: 222 242 233;
+  --way-admin: 214 154 0;
+  --way-admin-ink: 122 86 0;
+  --way-admin-tint: 252 243 214;
 
-  /* --- Status --- */
-  --status-success: #3D7A5F;
-  --status-success-bg: #E7F2EC;
-  --status-warning: #B8860B;
-  --status-warning-bg: #FDF6E3;
-  --status-error: #A63D40;
-  --status-error-bg: #FBEAEA;
-  --status-info: #4A6FA5;
-  --status-info-bg: #EDF2F9;
+  /* status */
+  --ok: 12 128 82;
+  --warn: 150 96 0;
+  --warn-tint: 252 243 214;
+  --error: 190 40 36;
+  --error-tint: 252 231 229;
 
-  /* --- Citation Types --- */
-  --cite-law: #2D4470;
-  --cite-law-bg: #E8ECF4;
-  --cite-precedent: #6B4C8A;
-  --cite-precedent-bg: #F0EBF5;
-  --cite-admin: #3D7A5F;
-  --cite-admin-bg: #E7F2EC;
+  --shadow-paper: 0 1px 0 rgb(var(--rule) / 0.9), 0 6px 18px -8px rgb(var(--ink) / 0.18);
+  --shadow-lift: 0 2px 0 rgb(var(--rule) / 0.9), 0 14px 30px -12px rgb(var(--ink) / 0.28);
 
-  /* --- Border --- */
-  --border-default: #E2DDD5;
-  --border-subtle: #EEEBE5;
-  --border-strong: #C5BFB5;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* --- Shadows (warm-toned) --- */
-  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.06);
-  --shadow-md: 0 2px 8px rgba(26, 23, 20, 0.08);
-  --shadow-lg: 0 4px 16px rgba(26, 23, 20, 0.10);
+  color-scheme: light;
+}
 
-  /* --- Transitions --- */
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-slow: 400ms;
+/* 야간 창구: after-hours variant, chosen by system or the header toggle */
+:root[data-theme='dark'] {
+  --ground: 14 20 18;
+  --paper: 24 32 29;
+  --paper-2: 31 41 37;
+  --ink: 230 237 234;
+  --ink-2: 190 202 197;
+  --ink-3: 150 165 159;
+  --rule: 50 64 58;
+  --rule-strong: 84 102 95;
+
+  --sign: 36 110 96;
+  --sign-hover: 46 128 112;
+  --sign-ink: 240 248 245;
+  --sign-ink-2: 206 228 221;
+
+  --led-ground: 8 6 5;
+  --led-dim: 70 30 22;
+
+  --way-law: 110 160 255;
+  --way-law-tint: 28 42 70;
+  --way-precedent: 70 196 140;
+  --way-precedent-tint: 20 52 40;
+  --way-admin: 240 190 60;
+  --way-admin-ink: 240 196 90;
+  --way-admin-tint: 58 46 14;
+
+  --ok: 70 196 140;
+  --warn: 240 190 60;
+  --warn-tint: 58 46 14;
+  --error: 255 120 110;
+  --error-tint: 64 24 22;
+
+  --shadow-paper: 0 1px 0 rgb(0 0 0 / 0.4), 0 8px 20px -10px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 2px 0 rgb(0 0 0 / 0.4), 0 16px 32px -12px rgb(0 0 0 / 0.7);
+
+  color-scheme: dark;
 }
 
 @layer base {
@@ -70,20 +100,76 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  html {
+    background-color: rgb(var(--ground));
+  }
+
+  body {
+    caret-color: rgb(var(--sign));
+  }
+
   ::selection {
-    background-color: var(--authority-light);
+    background-color: rgb(var(--way-law) / 0.22);
+    color: rgb(var(--ink));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--way-law));
+    outline-offset: 2px;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  input[type='search']::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+}
+
+@layer components {
+  /* thermal-paper ticket: perforated top edge drawn with a mask */
+  .ticket-edge {
+    -webkit-mask:
+      radial-gradient(circle 4px at 6px 0, transparent 97%, #000) top left / 12px 51% repeat-x,
+      linear-gradient(#000 0 0) bottom / 100% 50% no-repeat;
+    mask:
+      radial-gradient(circle 4px at 6px 0, transparent 97%, #000) top left / 12px 51% repeat-x,
+      linear-gradient(#000 0 0) bottom / 100% 50% no-repeat;
+  }
+
+  /* LED dot-matrix board glass */
+  .led-board {
+    background-color: rgb(var(--led-ground));
+    background-image: radial-gradient(rgb(var(--led-dim) / 0.55) 0.7px, transparent 0.9px);
+    background-size: 3px 3px;
+    box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7);
+  }
+
+  .led-text {
+    color: rgb(var(--led));
+    text-shadow: 0 0 6px rgb(var(--led) / 0.55);
+    font-family: var(--font-led);
+    letter-spacing: 0.06em;
+  }
+
+  /* official stamp mark (검증됨 / 완료) */
+  .stamp {
+    border: 1.5px solid currentColor;
+    border-radius: 999px;
+    transform: rotate(-6deg);
   }
 }
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-color: rgb(var(--rule-strong)) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -91,49 +177,71 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: var(--border-strong);
-    border-radius: 2px;
+    background-color: rgb(var(--rule-strong));
+    border-radius: 3px;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* --- Animations --- */
+/* --- Motion: paper feed (signature), LED step, stamp press --- */
 
-@keyframes settle {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes paper-feed {
+  from { transform: translateY(-8px); clip-path: inset(0 0 40% 0); }
+  to { transform: translateY(0); clip-path: inset(0 0 0 0); }
 }
 
-@keyframes cursor-blink {
+@keyframes settle {
+  from { opacity: 0.4; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes led-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes stamp-press {
+  0% { transform: rotate(-6deg) scale(1.3); }
+  60% { transform: rotate(-6deg) scale(0.95); }
+  100% { transform: rotate(-6deg) scale(1); }
+}
+
+@keyframes caret {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
 
-@keyframes breathe {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+.animate-feed {
+  animation: paper-feed 420ms var(--ease-out) both;
 }
 
 .animate-settle {
-  animation: settle var(--duration-slow) var(--ease-out-expo) both;
+  animation: settle 300ms var(--ease-out) both;
 }
 
-.animate-cursor {
-  animation: cursor-blink 1s step-end infinite;
+.animate-led {
+  animation: led-blink 1s steps(2, jump-none) infinite;
 }
 
-.animate-breathe {
-  animation: breathe 1.6s ease-in-out infinite;
+.animate-stamp {
+  animation: stamp-press 360ms var(--ease-out) both;
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, var(--surface-sunken) 25%, var(--surface-elevated) 50%, var(--surface-sunken) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+.animate-caret {
+  animation: caret 1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-feed,
+  .animate-settle,
+  .animate-stamp,
+  .animate-led,
+  .animate-caret {
+    animation: none;
+  }
 }
 
 /* --- Prose overrides --- */

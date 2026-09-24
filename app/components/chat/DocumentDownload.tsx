@@ -24,10 +24,11 @@ export function DocumentDownload({ content, fileName = '법률문서.txt' }: Doc
   }, [content]);
 
   return (
-    <div className="mt-3 pt-3 border-t border-border-subtle flex items-center gap-2">
+    <div className="mt-4 flex items-center gap-2 border-t border-dashed border-rule pt-3">
       <button
         onClick={handleDownload}
-        className="flex items-center gap-1.5 rounded-lg border border-authority-deep px-3 py-1.5 text-xs text-authority-deep transition-colors hover:bg-authority-deep hover:text-ink-inverse"
+        type="button"
+        className="flex items-center gap-1.5 rounded-[3px] bg-sign px-3 py-1.5 font-sign text-xs font-bold text-sign-ink transition-colors hover:bg-sign-hover"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
           <path d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z" />
@@ -37,7 +38,8 @@ export function DocumentDownload({ content, fileName = '법률문서.txt' }: Doc
       </button>
       <button
         onClick={handleCopy}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-ink-secondary transition-colors hover:text-ink-primary"
+        type="button"
+        className="flex items-center gap-1.5 rounded-[3px] px-3 py-1.5 text-xs text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
           <path d="M5.5 3.5A1.5 1.5 0 0 1 7 2h5.5A1.5 1.5 0 0 1 14 3.5v7a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 10.5v-7Z" />

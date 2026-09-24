@@ -91,18 +91,20 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
   return (
     <span className="inline">
       <button
+        type="button"
         onClick={handleClick}
-        className="inline text-authority-mid hover:text-authority-deep underline decoration-dotted decoration-accent-gold underline-offset-2 cursor-pointer font-medium transition-colors"
+        aria-expanded={expanded}
+        className="inline cursor-pointer rounded-[2px] bg-way-law-tint px-0.5 font-medium text-way-law underline decoration-way-law/50 decoration-dotted underline-offset-[3px] transition-colors hover:decoration-solid"
         title="클릭하여 조문 전문 보기"
       >
         {children}
       </button>
 
       {expanded && (
-        <span className="block my-2 border-l-[3px] border-accent-gold bg-surface-elevated p-4 text-sm">
+        <span className="my-3 block rounded-[4px] border border-rule bg-paper-2 p-4 text-sm not-prose animate-feed">
           {loading && (
-            <span className="flex items-center gap-2 text-ink-tertiary">
-              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+            <span className="flex items-center gap-2 text-ink-3" role="status">
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
@@ -111,43 +113,26 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
           )}
 
           {error && (
-            <span className="text-status-error">{error}</span>
+            <span className="text-error" role="alert">{error}</span>
           )}
 
           {data && !loading && (
-            <span className="block space-y-2">
-              <span className="block rounded-md border border-border-subtle bg-surface-sunken px-2 py-1 text-xs text-ink-tertiary">
-                AI 요약과 아래 공식 원문을 직접 대조하세요.
-              </span>
-              <span className="block font-display font-semibold text-ink-primary">
-                {data.name}
-                {articleLabel && ` ${articleLabel}`}
-              </span>
-              <span className="block whitespace-pre-wrap text-ink-secondary leading-relaxed">
-                {data.fullText}
-              </span>
-              <span className="flex items-center gap-3 pt-1">
-                <a
-                  href={data.externalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded-md border border-authority-deep px-2 py-1 text-xs text-authority-deep hover:bg-authority-deep hover:text-ink-inverse transition-colors"
-                >
-                  law.go.kr에서 보기
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="currentColor" className="h-2.5 w-2.5">
-                    <path d="M3.5 1.75a.75.75 0 0 0 0 1.5h3.69L1.22 9.22a.75.75 0 1 0 1.06 1.06l5.97-5.97V8a.75.75 0 0 0 1.5 0V2.5a.75.75 0 0 0-.75-.75h-5.5Z" />
-                  </svg>
-                </a>
+            <span className="block space-y-2.5">
+              <span className="flex items-start justify-between gap-3">
+                <span className="block font-sign text-[0.95rem] font-bold text-ink">
+                  {data.name}
+                  {articleLabel && ` ${articleLabel}`}
+                </span>
                 {data.verified ? (
-                  <span className="flex items-center gap-1 text-xs text-status-success">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3 text-accent-gold">
+                  <span className="stamp animate-stamp inline-flex shrink-0 items-center gap-1 px-2 py-0.5 font-sign text-[0.7rem] font-extrabold text-ok">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3" aria-hidden="true">
                       <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clipRule="evenodd" />
                     </svg>
                     검증됨
                   </span>
                 ) : (
                   <span
-                    className="flex items-center gap-1 text-xs text-status-warning"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-[3px] border border-dashed border-warn/70 bg-warn-tint px-2 py-0.5 font-sign text-[0.7rem] font-bold text-warn"
                     title="공식 원문과 자동 대조가 아직 완료되지 않았습니다. 아래 원문을 직접 확인하세요."
                   >
                     <svg
@@ -162,6 +147,25 @@ export function CitationCard({ citeUrl, children }: CitationCardProps) {
                     검증 대기 중
                   </span>
                 )}
+              </span>
+              <span className="block whitespace-pre-wrap leading-relaxed text-ink-2">
+                {data.fullText}
+              </span>
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-dashed border-rule pt-2.5">
+                <span className="text-xs text-ink-3">
+                  AI 요약과 아래 공식 원문을 직접 대조하세요.
+                </span>
+                <a
+                  href={data.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto inline-flex items-center gap-1 rounded-[3px] border border-sign px-2.5 py-1 font-sign text-xs font-bold text-sign transition-colors hover:bg-sign hover:text-sign-ink"
+                >
+                  law.go.kr에서 보기
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" className="h-2.5 w-2.5" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 2.5h5v5M9.5 2.5 3 9" />
+                  </svg>
+                </a>
               </span>
             </span>
           )}

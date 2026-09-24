@@ -1,13 +1,5 @@
+import { toolLabel, toolWayLine, type WayLine } from '@/lib/chat/tool-labels';
 import { LoadingDots } from '@/app/components/common/LoadingDots';
-
-const TOOL_LABELS: Record<string, string> = {
-  search_law: '법령 검색',
-  get_law_detail: '법령 조문 조회',
-  search_precedent: '판례 검색',
-  get_precedent_detail: '판례 상세 조회',
-  search_administrative_rule: '행정규칙 검색',
-  clarify_situation: '추가 질문 준비',
-};
 
 interface ToolCallIndicatorProps {
   toolName: string;
@@ -15,25 +7,35 @@ interface ToolCallIndicatorProps {
   summary?: string;
 }
 
-// 도구 호출 상태 표시 (마진 노트 스타일)
+const WAY_DOT: Record<WayLine, string> = {
+  law: 'bg-way-law',
+  precedent: 'bg-way-precedent',
+  admin: 'bg-way-admin',
+  neutral: 'bg-ink-3',
+};
+
+// 창구 처리 기록: 어떤 창구(도구)가 질문을 받아 처리 중/완료했는지 표시
 export function ToolCallIndicator({ toolName, status, summary }: ToolCallIndicatorProps) {
-  const label = TOOL_LABELS[toolName] ?? toolName;
+  const label = toolLabel(toolName);
+  const way = toolWayLine(toolName);
+  const done = status === 'done';
 
   return (
-    <div className="flex items-center gap-2 my-1 ml-4 animate-settle">
-      {status === 'calling' ? (
-        <span className="h-2 w-2 rounded-full bg-accent-gold animate-breathe" />
+    <div className="flex items-center gap-2.5 py-1 pl-1 text-[0.8rem] animate-settle">
+      <span aria-hidden="true" className={`h-1.5 w-5 shrink-0 rounded-full ${WAY_DOT[way]} ${done ? '' : 'opacity-60'}`} />
+      <span className={`font-sign font-bold ${done ? 'text-ink' : 'text-ink-2'}`}>{label}</span>
+      {done ? (
+        <span className="stamp animate-stamp inline-block px-1.5 py-px font-sign text-[0.68rem] font-extrabold leading-tight text-ok">
+          완료
+        </span>
       ) : (
-        <svg className="h-3.5 w-3.5 text-status-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
+        <span className="flex items-center gap-1.5 text-ink-3">
+          처리 중
+          <LoadingDots />
+        </span>
       )}
-      <span className={`text-xs tracking-wide ${status === 'calling' ? 'text-ink-tertiary' : 'text-ink-secondary'}`}>
-        {label}
-      </span>
-      {status === 'calling' && <LoadingDots />}
-      {status === 'done' && summary && (
-        <span className="text-xs text-ink-tertiary">{summary}</span>
+      {done && summary && (
+        <span className="min-w-0 truncate text-ink-3">{summary}</span>
       )}
     </div>
   );
