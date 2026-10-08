@@ -91,7 +91,7 @@ ai-law-counsel/
 - [ ] **Step 1: Next.js 프로젝트 생성**
 
 ```bash
-cd /Users/danny/Documents/PARA/Resource/ai-law-counsel
+cd ~/Documents/PARA/Resource/ai-law-counsel
 npx create-next-app@14 . --typescript --tailwind --eslint --app --src-dir=false --import-alias="@/*" --use-npm --no-turbopack
 ```
 
