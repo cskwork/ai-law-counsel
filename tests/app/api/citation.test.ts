@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { LawSearchResult, LawDetail, PrecedentSearchResult, PrecedentDetail } from '@/lib/law/types';
 
 vi.mock('@/lib/law/client', () => ({
@@ -26,6 +26,7 @@ vi.mock('@/lib/law/get-precedent-detail', () => ({
   getPrecedentDetail: vi.fn(),
 }));
 
+import { createLawApiClient } from '@/lib/law/client';
 import { searchLaw } from '@/lib/law/search-law';
 import { getLawDetail } from '@/lib/law/get-law-detail';
 import { getPublicLawArticle } from '@/lib/law/get-public-law-article';
@@ -197,5 +198,39 @@ describe('GET /api/citation', () => {
     expect(body.data.verified).toBe(true);
     expect(body.data.fullText).toContain('불법행위의 내용');
     expect(vi.mocked(getPublicLawArticle)).toHaveBeenCalledWith('민법', '750');
+  });
+  describe('LAW_API_KEY 미설정', () => {
+    beforeEach(() => {
+      vi.mocked(createLawApiClient).mockImplementation(() => {
+        throw new Error('LAW_API_KEY 환경변수가 설정되지 않았습니다');
+      });
+    });
+
+    afterEach(() => {
+      vi.mocked(createLawApiClient).mockImplementation(() => ({}) as ReturnType<typeof createLawApiClient>);
+    });
+
+    it('행정규칙 인용은 API 키 없이도 원문 링크를 반환해야 한다', async () => {
+      const { GET } = await importRoute();
+      const response = await GET(createRequest({ type: 'rule', id: '행정규칙명' }));
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(body.data.type).toBe('rule');
+      expect(body.data.verified).toBe(false);
+      expect(body.data.externalUrl).toContain('law.go.kr');
+    });
+
+    it('법령 인용은 503과 국가법령정보센터 안내를 반환해야 한다', async () => {
+      const { GET } = await importRoute();
+      const response = await GET(createRequest({ type: 'statute', id: '민법', article: '750' }));
+      const body = await response.json();
+
+      expect(response.status).toBe(503);
+      expect(body.success).toBe(false);
+      expect(body.error).toContain('국가법령정보센터');
+      expect(body.error).not.toContain('LAW_API_KEY');
+    });
   });
 });

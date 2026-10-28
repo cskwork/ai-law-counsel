@@ -62,6 +62,22 @@ export async function GET(request: Request) {
     );
   }
 
+  // 행정규칙은 상세 조회를 지원하지 않으므로 API 키 없이 원문 링크만 돌려준다
+  if (type === 'rule') {
+    return Response.json({
+      success: true,
+      data: {
+        type,
+        name: id,
+        articleNumber: normalizedArticle ?? article,
+        fullText: '해당 내용을 찾을 수 없습니다.',
+        externalUrl: buildExternalUrl(type, id, normalizedArticle ?? article),
+        verified: false,
+        fetchedAt: new Date().toISOString(),
+      },
+    });
+  }
+
   let client;
   try {
     client = createLawApiClient();
@@ -69,7 +85,7 @@ export async function GET(request: Request) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error('[citation] 설정 오류:', detail);
     return Response.json(
-      { success: false, error: '인용 조회 설정이 올바르지 않습니다.' },
+      { success: false, error: '국가법령정보센터 조회 설정이 올바르지 않습니다.' },
       { status: 503 },
     );
   }
@@ -141,7 +157,6 @@ export async function GET(request: Request) {
         fullText = detail.fullText || detail.summary || '';
       }
     }
-    // rule 타입은 현재 상세 조회 미지원
 
     return Response.json({
       success: true,
