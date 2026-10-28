@@ -84,7 +84,7 @@ No database. Conversation history stays in the user's browser.
 | Degenerate repetition / over-long answer | Stream cut with a notice | `lib/chat/orchestrator.ts`, `lib/chat/answer-guard.ts` |
 | Citation lookup: DRF unreachable | Public-page fallback for statute articles; otherwise 200 with `verified: false` and a law.go.kr link | `app/api/citation/route.ts` |
 | Citation lookup: `LAW_API_KEY` missing | 503 for statutes and precedents; administrative rules still return their link | `app/api/citation/route.ts` |
-| `localStorage` full | Keeps the newest 80 % of conversations, else clears the key | `app/hooks/useConversationHistory.ts` |
+| `localStorage` full | Retries with only the newest 40 conversations (80 % of the 50-conversation cap); if that still fails, deletes the whole history key. With 40 or fewer stored, nothing is trimmed, so a quota error wipes history | `app/hooks/useConversationHistory.ts` |
 
 ## Tests
 
