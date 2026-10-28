@@ -47,7 +47,7 @@ API 키 발급:
 - `LAW_API_KEY` — https://open.law.go.kr
 
 선택 환경변수:
-- `MCP_BASE_URL` — korean-law-mcp 서버 호스트 (예: `https://csk917-korean-law-mcp.hf.space`). 미설정 시 `https://korean-law-mcp.fly.dev`. 자체 호스팅한 Space로 전환할 때만 설정합니다.
+- `MCP_BASE_URL` — `lib/mcp/` 전용 korean-law-mcp 호스트. 현재 채팅·인용 경로는 MCP를 쓰지 않고 국가법령정보센터 API를 직접 호출하므로 앱 실행에는 필요 없습니다 ([ADR 0001](docs/adr/0001-direct-law-api-instead-of-mcp.md)).
 
 ## 코드 스타일
 

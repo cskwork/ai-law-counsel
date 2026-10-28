@@ -20,7 +20,7 @@ Answer Korean legal questions in plain Korean, grounded in real statutes, preced
 
 ## Positioning
 
-The model does not answer from memory: it autonomously calls legal-search tools (up to 10 rounds, via the korean-law-mcp server) and streams an answer whose citations open the official article text inline, with a verified/pending marker and a law.go.kr deeplink. A generic chatbot cannot truthfully copy "every citation is clickable and traceable to the government source."
+The model does not answer from memory: it autonomously calls legal-search tools (up to 8 rounds, against the law.go.kr Open API) and streams an answer whose citations open the official article text inline, with a verified/pending marker and a law.go.kr deeplink. A generic chatbot cannot truthfully copy "every citation is clickable and traceable to the government source."
 
 ## Operating Context
 
@@ -31,7 +31,7 @@ The model does not answer from memory: it autonomously calls legal-search tools 
 
 ## Capabilities and Constraints
 
-- Next.js 14 App Router, React 18, Tailwind 3, Vercel serverless. LLM: Z.ai GLM with function calling; legal data: law.go.kr Open API via MCP.
+- Next.js 14 App Router, React 18, Tailwind 3, Vercel serverless. LLM: Z.ai GLM with function calling; legal data: law.go.kr Open API called directly from server routes (see docs/adr/0001-direct-law-api-instead-of-mcp.md).
 - No accounts, no server-side storage of conversations.
 - Constitution (binding): evidence-based answers only, no fabricated sources; the three-layer legal disclaimer (UI banner, system prompt, docs) must never be removed or weakened; emergency hotlines must be shown; government text displayed without semantic change.
 - Terminology: 법령 (statute), 판례 (precedent), 행정규칙 (administrative rule), 조문 (article), 내용증명 (certified demand letter).
